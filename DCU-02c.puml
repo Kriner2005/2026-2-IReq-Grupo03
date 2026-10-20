@@ -6,15 +6,15 @@ actor "jefe/Auxiliar de Bodega" as BOD
 
 
 rectangle "Sistema SICIRD — La Tradición" {
-  usecase "CU-02  Crear entrega" as CU02
-  usecase "CU-08 Seleccionar lote o conjunto de lotes " as CU08
-  usecase "CU-09 Asignar Cliente" as CU09
+  usecase "CU-03  Crear entrega" as CU03
+  usecase "CU-11 Seleccionar lote o conjunto de lotes " as CU11
+  usecase "CU-12 Asignar Cliente" as CU12
 }
 
-BOD -- CU02
+BOD -- CU03
 
-CU02 ..> CU08 : <<include>>
-CU02 ..> CU09 : <<include>>
+CU03 ..> CU11 : <<include>>
+CU03 ..> CU12 : <<include>>
 
 
 

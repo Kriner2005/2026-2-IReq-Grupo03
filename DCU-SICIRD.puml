@@ -1,0 +1,30 @@
+@startuml DCU-01-SICIRD
+title DCU-01-SICIRD · Contexto Quién y que rodea al sistema - Sistema SICIRD (La Tradición) v1.0
+left to right direction
+
+actor "Distribuidor-Transportador" as CON
+actor "Asesor Comercial" as COM
+actor "Jefe / Auxiliar de Bodega" as BOD 
+actor "Responsable de Calidad" as CAL
+actor "Encargado de Despacho" as DES
+actor "Planificador " as TIME <<temporal>>
+
+
+rectangle "Sistema SICIRD — La Tradición" {
+  usecase "CU-01 Registrar entrega en campo" as CU01
+  usecase "CU-02 Crear entrega" as CU02
+  usecase "CU-03 Generar rutas de entrega" as CU03
+  usecase "CU-04 Alertar semáforo de vencimiento" as CU04
+  usecase "CU-05 Generar reporte de trazabilidad INVIMA" as CU05
+  }
+
+CON -- CU01
+COM -- CU02
+BOD -- CU02
+CAL -- CU05
+DES -- CU03
+TIME -- CU04
+
+
+
+@enduml

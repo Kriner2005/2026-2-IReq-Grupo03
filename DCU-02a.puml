@@ -1,0 +1,20 @@
+@startuml DCU-02a-SICIRD
+title DCU-02a-SICIRD · vista <<Distribuidor-Transportador >>- Sistema SICIRD (La Tradición)
+left to right direction
+
+actor "Distribuidor-Transportador" as CON
+
+
+rectangle "Sistema SICIRD — La Tradición" {
+  usecase "CU-01 Registrar entrega en campo" as CU01
+  usecase "CU-06 Aceptar o rechazar entrega" as CU06
+  usecase "CU-07 Sincronizar registros de campo" as CU07
+}
+
+CON -- CU01
+CON -- CU06
+
+CU01 ..> CU07 : <<include>>
+CU01 ..> CU06 : <<include>>
+
+@enduml

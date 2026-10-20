@@ -1,0 +1,38 @@
+@startuml
+' DSE-01 · Diagrama de Secuencia · CU-01 "Registrar una entrega en campo"
+title DSE-01 · Diagrama de Secuencia: Registrar entrega en campo (CU-01)
+autonumber
+
+actor "Distribuidor-\nTransportador" as CON
+participant "App Móvil SICIRD\n(Dispositivo Campo)" as APP
+participant "Servidor Sede Central\n(SICIRD Planta)" as SRV
+database "BD Central\n(La Tradición)" as DB
+
+CON -> APP: Seleccionar parada y recuperar datos del pedido
+activate APP
+APP --> CON: Presentar kilos esperados, lotes y datos del cliente
+deactivate APP
+
+CON -> APP: Registrar kilos entregados, firma / novedad (motivo y foto)
+activate APP
+APP -> APP: Guardar registro localmente en SQLite móvil
+APP --> CON: Informar entrega guardada localmente
+
+alt Conexión de datos disponible
+  APP -> SRV: SincronizarEntrega(idPedido, kilos, estadoEmpaque, firma, foto)
+  activate SRV
+  SRV -> DB: Persistir registro de entrega y actualizar trazabilidad (G5.1)
+  activate DB
+  DB --> SRV: Confirmación de registro guardado
+  deactivate DB
+  SRV --> APP: Confirmación 200 OK (Sincronizado)
+  deactivate SRV
+  APP -> APP: Actualizar estado local a "Sincronizado"
+  APP --> CON: Mostrar indicador visual de sincronización exitosa
+else Dispositivo sin red de datos (Extensión 4a)
+  APP -> APP: Conservar registro como "Pendiente de Sincronización"
+  APP --> CON: Mostrar aviso de registro guardado fuera de línea
+end
+
+deactivate APP
+@enduml

@@ -15,7 +15,7 @@ deactivate APP
 
 CON -> APP: Registrar kilos entregados, firma / novedad (motivo y foto)
 activate APP
-APP -> APP: Guardar registro localmente en SQLite móvil
+APP -> APP: Guardar registro localmente en el dispositivo móvil
 APP --> CON: Informar entrega guardada localmente
 
 alt Conexión de datos disponible
@@ -25,7 +25,7 @@ alt Conexión de datos disponible
   activate DB
   DB --> SRV: Confirmación de registro guardado
   deactivate DB
-  SRV --> APP: Confirmación 200 OK (Sincronizado)
+  SRV --> APP: Confirmación OK (Sincronizado)
   deactivate SRV
   APP -> APP: Actualizar estado local a "Sincronizado"
   APP --> CON: Mostrar indicador visual de sincronización exitosa

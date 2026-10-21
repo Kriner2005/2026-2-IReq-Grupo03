@@ -7,17 +7,17 @@ actor "Asesor Comercial" as COM
 
 rectangle "Sistema SICIRD — La Tradición" {
   usecase "CU-02 Generar orden" as CU02
-  usecase "CU-08 Asignar Cliente" as CU08
-  usecase "CU-09 Seleccionar producto, cantidad y presentacion" as CU09
-  usecase "CU-010 Asignar condiciones de la orden" as CU10
+  usecase "CU-10 Asignar Cliente" as CU10
+  usecase "CU-11 Seleccionar producto, cantidad y presentacion" as CU11
+  usecase "CU-12 Asignar condiciones de la orden" as CU12
 
 }
 
 COM -- CU02
 
-CU10 ..> CU02 : <<extends>>
-CU02 ..> CU09 : <<include>>
-CU02 ..> CU08 : <<include>>
+CU12 ..> CU02 : <<extends>>
+CU02 ..> CU11 : <<include>>
+CU02 ..> CU10 : <<include>>
 
 
 @enduml

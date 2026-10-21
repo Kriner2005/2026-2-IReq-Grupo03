@@ -12,19 +12,21 @@ actor "Planificador " as TIME <<temporal>>
 
 rectangle "Sistema SICIRD — La Tradición" {
   usecase "CU-01 Registrar entrega en campo" as CU01
-  usecase "CU-02 Crear orden" as CU02
-  usecase "CU-03 Crear entrega" as CU03
-  usecase "CU-04 Generar rutas de entrega" as CU04
-  usecase "CU-05 Alertar semáforo de vencimiento" as CU05
-  usecase "CU-06 Generar reporte de trazabilidad INVIMA" as CU06
+  usecase "CU-02 Registrar ingreso de productos" as CU02
+  usecase "CU-03 Generar orden" as CU03
+  usecase "CU-04 Crear entrega" as CU04
+  usecase "CU-05 Generar rutas de entrega" as CU05
+  usecase "CU-06 Alertar semáforo de vencimiento" as CU06  
+  usecase "CU-07 Generar reporte de trazabilidad INVIMA" as CU07
   }
 
 CON -- CU01
-COM -- CU02
-BOD -- CU03
-CAL -- CU06
-DES -- CU04
-TIME -- CU05
+BOD -- CU02
+COM -- CU03
+BOD -- CU04
+DES -- CU05
+TIME -- CU06
+CAL -- CU07
 
 
 

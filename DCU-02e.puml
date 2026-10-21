@@ -1,20 +1,20 @@
-@startuml DCU-02a-SICIRD
-title DCU-02a-SICIRD · vista <<Encargado de Despacho >>- Sistema SICIRD (La Tradición)
+@startuml DCU-02e-SICIRD
+title DCU-02e-SICIRD · vista <<Encargado de Despacho >>- Sistema SICIRD (La Tradición)
 left to right direction
 
 actor "Encargado de Despacho" as DES
 
 
 rectangle "Sistema SICIRD — La Tradición" {
-  usecase "CU-03 Generar rutas de entrega" as CU03
-  usecase "CU-10 Seleccionar entregas pendientes" as CU10
-  usecase "CU-11 Seleccionar unidad de transporte" as CU11
+  usecase "CU-04 Generar rutas de entrega" as CU04
+  usecase "CU-14 Seleccionar entregas pendientes" as CU14
+  usecase "CU-15 Seleccionar unidad de transporte" as CU15
 }
 
-DES -- CU03
+DES -- CU04
 
-CU03 ..> CU10 : <<include>>
-CU03 ..> CU11 : <<include>>
+CU04 ..> CU14 : <<include>>
+CU04 ..> CU15 : <<include>>
 
 
 @enduml

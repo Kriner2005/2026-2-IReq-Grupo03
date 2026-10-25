@@ -1,0 +1,39 @@
+@startuml AD-CU02-RegistrarIngreso
+title Diagrama de Actividades · CU-02 Registrar Ingreso de Productos
+
+|Jefe / Auxiliar de Bodega|
+start
+:Inicia sesión en sistema;
+:Selecciona "Registrar ingreso de productos";
+:Ingresa datos del lote (código, cantidad, fecha de vencimiento, proveedor);
+
+|Sistema SICIRD|
+:Valida formato y campos obligatorios;
+if (¿Datos válidos?) then (Sí)
+else (No)
+  :Muestra mensaje de error en datos;
+  stop
+endif
+
+|Jefe / Auxiliar de Bodega|
+:Realiza inspección física y de empaque;
+if (¿Cumple inspección?) then (Sí)
+  :Marca producto como 
+"lote aceptado";
+else (No)
+  :Marca producto como "lote rechazado";
+ |Sistema SICIRD|
+  :Guarda estado "Lote Rechazado";
+  :Notifica novedad al jefe;
+  stop
+endif
+
+|Sistema SICIRD|
+:Actualiza inventario agregando el stock;
+:Genera e imprime etiqueta de ubicación;
+:Muestra confirmación de registro exitoso;
+
+|Jefe / Auxiliar de Bodega|
+:Ubica el producto en bodega;
+stop
+@enduml

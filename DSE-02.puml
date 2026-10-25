@@ -1,0 +1,40 @@
+@startuml DSE-CU02-RegistrarIngreso
+
+actor "Auxiliar de Bodega" as Auxiliar
+participant "SICIRD (UI)" as UI
+participant "Sistema SICIRD" as System
+database "BD" as DB
+actor "Jefe de Bodega / Calidad" as Jefe
+
+Auxiliar -> UI: 1. Inicia sesión y selecciona "Registrar Ingreso"
+Auxiliar -> UI: 2. Ingresa datos del lote (código, cantidad, fecha, proveedor)
+UI -> System: 3. enviarDatosLote
+
+alt Datos Válidos
+    System --> UI: 4. Formulario correcto
+    Auxiliar -> UI: 5. Registra inspección física y empaque
+    
+    alt Lote Aceptado
+        UI -> System: 6a.1. registrar que se ha Aceptado
+        System -> DB: 6a.2. Actualiza stock de inventario
+        System -> UI: 6a.3. Muestra confirmación e imprime etiqueta
+        UI --> Auxiliar: 6a.4. Ubica producto cárnico en bodega
+        
+    else Lote Rechazado
+        Auxiliar -> UI: 6b.1. Marca producto como "Rechazado"
+        UI -> System: 6b.2. registrarRechazo
+        System -> DB: 6b.3. Guarda estado "Lote Rechazado"
+    
+        System --> UI: 6b.4. Muestra confirmación de rechazo
+        UI --> Auxiliar: 6b.5. Notifica fin del proceso por rechazo
+        
+
+        System --> Jefe: 6b.6. Envía notificación de novedad (email/alerta)
+    end
+    
+else Datos No Válidos
+    System --> UI: 4a.1. Muestra error de datos
+    UI --> Auxiliar: 4a.2. Detiene proceso
+end
+
+@enduml

@@ -1,0 +1,39 @@
+{
+  "herramienta": "spec-lint (autoprueba de catálogo, tablas de decisión y cálculos)",
+  "fecha_ejecucion": "2026-11-22T19:04:00.093681",
+  "total_reglas": 16,
+  "resumen_tablas_decision": [
+    {
+      "tabla": "TD-01",
+      "combinaciones_concretas": 8,
+      "sin_regla": 0,
+      "solapamientos": 0,
+      "cobertura_por_regla": {
+        "R1": 1,
+        "R2": 1,
+        "R3": 2,
+        "R4": 4
+      }
+    },
+    {
+      "tabla": "TD-02",
+      "combinaciones_concretas": 12,
+      "sin_regla": 0,
+      "solapamientos": 0,
+      "cobertura_por_regla": {
+        "R1": 2,
+        "R2": 1,
+        "R3": 1,
+        "R4": 1,
+        "R5": 1,
+        "R6": 6
+      }
+    }
+  ],
+  "calculos_verificados": "11/11",
+  "preguntas_negocio_registradas": 4,
+  "errores": 0,
+  "advertencias": 0,
+  "estado_autoprueba": "APROBADA (100%)",
+  "hallazgos": []
+}

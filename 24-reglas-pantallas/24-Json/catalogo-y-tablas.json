@@ -1,0 +1,546 @@
+{
+  "meta": {
+    "unidad": "UNIDAD 7 · SESIÓN 4 DE 5",
+    "asignatura": "Ingeniería de Requisitos",
+    "proyecto": "Sistema SICIRD — La Tradición (Tunja, Boyacá)",
+    "directorio_destino": "24-reglas-pantallas/",
+    "fuente_base": "catalogo_2.docx",
+    "version": "v1"
+  },
+  "catalogo_reglas": [
+    {
+      "id": "RN-01",
+      "tipo": "restricción",
+      "enunciado": "Cada lote registrado en recepción debe tener exactamente un identificador único de trazabilidad generado por el sistema y no reutilizable.",
+      "fuente": "HU-01 · CU-02 (UCD-CU02)",
+      "dueno": "Jefe de Bodega",
+      "estado": "Validada",
+      "ejemplo": "Lote L-2026-01 recibe ID único de trazabilidad y no puede duplicarse.",
+      "usada_en": [
+        "P-04",
+        "CU-02"
+      ]
+    },
+    {
+      "id": "RN-02",
+      "tipo": "parámetro",
+      "enunciado": "El rango térmico permitido en recepción y almacenamiento para productos cárnicos refrigerados es de 0,0 °C (incluido) a 4,0 °C (incluido).",
+      "fuente": "HU-01 · HU-08 · Normativa sanitaria INVIMA",
+      "dueno": "Coordinador de Calidad",
+      "estado": "Validada (por confirmar con la Oficina Jurídica)",
+      "ejemplo": "FL-02 (0,0 °C) y FL-04 (4,0 °C) se aceptan; FL-01 (-0,1 °C) y FL-05 (4,1 °C) se rechazan.",
+      "usada_en": [
+        "P-04",
+        "P-07",
+        "CU-02",
+        "CU-06"
+      ]
+    },
+    {
+      "id": "RN-03",
+      "tipo": "restricción",
+      "enunciado": "Todo lote con temperatura fuera del rango térmico permitido o con registro INVIMA vencido o inconsistente frente al pedido debe rechazarse y bloquearse para despacho.",
+      "fuente": "HU-01 · HU-08 · CU-02 (UCD-CU02)",
+      "dueno": "Coordinador de Calidad",
+      "estado": "Validada (por confirmar con la Oficina Jurídica)",
+      "ejemplo": "Lote L-2026-02 con registro sanitario vencido se bloquea con MSG-05.",
+      "usada_en": [
+        "P-04",
+        "P-05",
+        "P-06",
+        "P-07",
+        "CU-02",
+        "CU-03"
+      ]
+    },
+    {
+      "id": "RN-04",
+      "tipo": "derivación",
+      "enunciado": "Ante cualquier medición de temperatura superior al límite máximo permitido (4,0 °C), el sistema marca el lote en observación y genera una alerta inmediata al Coordinador de Calidad.",
+      "fuente": "HU-08 · CU-02 · CU-06",
+      "dueno": "Coordinador de Calidad",
+      "estado": "Validada",
+      "ejemplo": "FL-06: recepción a 6,2 °C dispara alerta térmica inmediata al Coordinador de Calidad.",
+      "usada_en": [
+        "P-04",
+        "P-07",
+        "CU-02",
+        "CU-06"
+      ]
+    },
+    {
+      "id": "RN-05",
+      "tipo": "restricción",
+      "enunciado": "Una orden comercial solo puede generarse para un cliente activo sin restricciones comerciales vigentes y con al menos un ítem de producto con cantidad mayor a cero.",
+      "fuente": "HU-02 · CU-02 (DCU-02b)",
+      "dueno": "Asesor Comercial",
+      "estado": "Validada",
+      "ejemplo": "Orden con 0 ítems o cliente bloqueado se rechaza.",
+      "usada_en": [
+        "P-05",
+        "CU-02 (DCU-02b)"
+      ]
+    },
+    {
+      "id": "RN-06",
+      "tipo": "derivación",
+      "enunciado": "La selección y asignación de lotes disponibles para preparar una entrega debe ordenarse estrictamente bajo la regla FEFO (primero en expirar, primero en salir).",
+      "fuente": "HU-03 · CU-03 (DCU-02c)",
+      "dueno": "Jefe de Bodega",
+      "estado": "Validada",
+      "ejemplo": "Entre L-A (vence 28/11/2026) y L-B (vence 05/12/2026), el sistema prioriza L-A.",
+      "usada_en": [
+        "P-05",
+        "P-06",
+        "CU-03"
+      ]
+    },
+    {
+      "id": "RN-07",
+      "tipo": "restricción",
+      "enunciado": "Solo los lotes en estado Aceptado y con saldo disponible mayor o igual a la cantidad solicitada pueden asignarse a una entrega.",
+      "fuente": "HU-03 · CU-03 (DCU-02c)",
+      "dueno": "Jefe de Bodega",
+      "estado": "Validada",
+      "ejemplo": "Lote LT-2026-079 bloqueado o sin stock suficiente no se asigna directamente sin reasignación (P-06).",
+      "usada_en": [
+        "P-05",
+        "P-06",
+        "CU-03"
+      ]
+    },
+    {
+      "id": "RN-08",
+      "tipo": "restricción",
+      "enunciado": "Al confirmar una entrega, el sistema descuenta o reserva inmediatamente el saldo asignado de cada lote para evitar doble asignación concurrente.",
+      "fuente": "HU-03 · CU-03 (DCU-02c)",
+      "dueno": "Jefe de Bodega",
+      "estado": "Validada",
+      "ejemplo": "Lote con 25 kg disponibles queda en 0 kg disponibles tras asignar 25 kg a una entrega.",
+      "usada_en": [
+        "P-05",
+        "P-08",
+        "CU-03"
+      ]
+    },
+    {
+      "id": "RN-09",
+      "tipo": "restricción",
+      "enunciado": "Una ruta de entrega requiere al menos una entrega en estado Pendiente de ruta y una unidad de transporte refrigerada disponible cuya capacidad máxima soporte la carga acumulada.",
+      "fuente": "HU-04 · CU-04 (DCU-02e)",
+      "dueno": "Encargado de Despacho",
+      "estado": "Validada",
+      "ejemplo": "Ruta #R-04 valida carga contra capacidad de unidad refrigerada y secuencia perecederos primero (M-06).",
+      "usada_en": [
+        "P-08",
+        "P-01",
+        "CU-04"
+      ]
+    },
+    {
+      "id": "RN-10",
+      "tipo": "restricción",
+      "enunciado": "El rechazo total o parcial de una entrega en campo exige registrar obligatoriamente una causal tipificada y las cantidades afectadas.",
+      "fuente": "HU-05 · CU-01 (DCU-02a)",
+      "dueno": "Encargado de Despacho",
+      "estado": "Validada",
+      "ejemplo": "Entrega rechazada en destino sin causal escrita es bloqueada por el formulario móvil.",
+      "usada_en": [
+        "P-03",
+        "CU-01"
+      ]
+    },
+    {
+      "id": "RN-11",
+      "tipo": "derivación",
+      "enunciado": "Los registros de entrega capturados sin conexión a red se almacenan en cola local cifrada y se sincronizan de forma idempotente al restablecer enlace sin duplicar movimientos.",
+      "fuente": "HU-05 · CU-01 · CU-07",
+      "dueno": "Administrador de TI",
+      "estado": "Validada",
+      "ejemplo": "Reintentos tras cierre offline en Vereda Runta consolidan un único estado sincronizado (M-02).",
+      "usada_en": [
+        "P-01",
+        "P-02",
+        "P-03",
+        "CU-01",
+        "CU-07"
+      ]
+    },
+    {
+      "id": "RN-12",
+      "tipo": "parámetro",
+      "enunciado": "El semáforo de vencimiento clasifica los lotes activos según días calendario restantes d hasta su vencimiento: Verde si d > 7; Amarillo (advertencia) si 3 ≤ d ≤ 7; Rojo (crítico) si d ≤ 2.",
+      "fuente": "HU-06 · CU-06 (DCU-02f)",
+      "dueno": "Jefe de Bodega",
+      "estado": "Provisional",
+      "ejemplo": "FL-07 (8 d) = Verde; FL-08 (7 d) y FL-09 (5 d) = Amarillo; FL-10 (2 d) = Rojo.",
+      "usada_en": [
+        "P-07",
+        "P-05",
+        "CU-06",
+        "CU-19"
+      ]
+    },
+    {
+      "id": "RN-13",
+      "tipo": "restricción",
+      "enunciado": "Cuando un lote ingresa por primera vez en estado Amarillo (advertencia) o Rojo, el sistema notifica una única vez al Jefe y Auxiliar de Bodega sin duplicar alertas en ejecuciones repetidas.",
+      "fuente": "HU-06 · CU-19 (DCU-02f)",
+      "dueno": "Jefe de Bodega",
+      "estado": "Validada",
+      "ejemplo": "Dos ejecuciones seguidas del Planificador en el mismo día generan una sola notificación MSG-22.",
+      "usada_en": [
+        "P-07",
+        "CU-06",
+        "CU-19"
+      ]
+    },
+    {
+      "id": "RN-14",
+      "tipo": "restricción",
+      "enunciado": "Los registros históricos de recepción, temperatura, movimientos de inventario y entregas son inmutables: nunca se modifican ni se eliminan tras su confirmación.",
+      "fuente": "HU-07 · Normativa INVIMA",
+      "dueno": "Coordinador de Calidad",
+      "estado": "Validada (por confirmar con la Oficina Jurídica)",
+      "ejemplo": "Ningún rol (incluido Admin TI) puede borrar una medición térmica o entrega cerrada.",
+      "usada_en": [
+        "P-07",
+        "P-09",
+        "CU-06 (DCU-02d)"
+      ]
+    },
+    {
+      "id": "RN-15",
+      "tipo": "derivación",
+      "enunciado": "El reporte de trazabilidad INVIMA consolida de extremo a extremo proveedor, lote, mediciones térmicas, movimientos de bodega, ruta, transportador y cliente destino para los lotes seleccionados.",
+      "fuente": "HU-07 · CU-06 (DCU-02d)",
+      "dueno": "Coordinador de Calidad",
+      "estado": "Validada (por confirmar con la Oficina Jurídica)",
+      "ejemplo": "Consulta y exportación en P-09 genera trazabilidad completa del lote seleccionado.",
+      "usada_en": [
+        "P-09",
+        "CU-06",
+        "CU-13"
+      ]
+    },
+    {
+      "id": "RN-16",
+      "tipo": "restricción",
+      "enunciado": "Un lote marcado en estado Rojo (vencido o próximo a vencer según política sanitaria) queda bloqueado automáticamente para nuevas asignaciones de despacho.",
+      "fuente": "HU-06 · HU-07 · Normativa INVIMA",
+      "dueno": "Coordinador de Calidad",
+      "estado": "Provisional (por confirmar con la Oficina Jurídica)",
+      "ejemplo": "FL-11: lote con 0 días restantes pasa a Rojo y no aparece disponible en CU-03.",
+      "usada_en": [
+        "P-05",
+        "P-06",
+        "P-07",
+        "CU-03",
+        "CU-06"
+      ]
+    }
+  ],
+  "tablas_decision": [
+    {
+      "id": "TD-01",
+      "proposito": "¿Cuándo se acepta o rechaza un lote cárnico en recepción?",
+      "reglas_usadas": [
+        "RN-01",
+        "RN-02",
+        "RN-03",
+        "RN-04"
+      ],
+      "condiciones": [
+        {
+          "nombre": "Temperatura en rango (0,0–4,0 °C)",
+          "dominio": [
+            "Sí",
+            "No"
+          ]
+        },
+        {
+          "nombre": "Registro INVIMA vigente",
+          "dominio": [
+            "Sí",
+            "No"
+          ]
+        },
+        {
+          "nombre": "Coincide con pedido",
+          "dominio": [
+            "Sí",
+            "No"
+          ]
+        }
+      ],
+      "reglas": [
+        {
+          "id": "R1",
+          "valores": {
+            "Temperatura en rango (0,0–4,0 °C)": "Sí",
+            "Registro INVIMA vigente": "Sí",
+            "Coincide con pedido": "Sí"
+          },
+          "entonces": "Aceptar lote, asignar ID único y habilitar en inventario disponible"
+        },
+        {
+          "id": "R2",
+          "valores": {
+            "Temperatura en rango (0,0–4,0 °C)": "Sí",
+            "Registro INVIMA vigente": "Sí",
+            "Coincide con pedido": "No"
+          },
+          "entonces": "Rechazar lote por inconsistencia con pedido y bloquear disponibilidad"
+        },
+        {
+          "id": "R3",
+          "valores": {
+            "Temperatura en rango (0,0–4,0 °C)": "Sí",
+            "Registro INVIMA vigente": "No",
+            "Coincide con pedido": "-"
+          },
+          "entonces": "Rechazar lote por soporte sanitario no vigente y bloquear disponibilidad"
+        },
+        {
+          "id": "R4",
+          "valores": {
+            "Temperatura en rango (0,0–4,0 °C)": "No",
+            "Registro INVIMA vigente": "-",
+            "Coincide con pedido": "-"
+          },
+          "entonces": "Rechazar lote por desviación térmica, marcar en observación y alertar a Calidad (RN-04)"
+        }
+      ]
+    },
+    {
+      "id": "TD-02",
+      "proposito": "Clasificación del semáforo de vencimiento y emisión de alertas",
+      "reglas_usadas": [
+        "RN-12",
+        "RN-13",
+        "RN-16"
+      ],
+      "condiciones": [
+        {
+          "nombre": "Días calendario restantes (d)",
+          "dominio": [
+            ">7",
+            "3..7",
+            "<=2"
+          ]
+        },
+        {
+          "nombre": "Estado del lote en bodega",
+          "dominio": [
+            "Sí",
+            "No"
+          ]
+        },
+        {
+          "nombre": "Notificación previa enviada",
+          "dominio": [
+            "Sí",
+            "No"
+          ]
+        }
+      ],
+      "reglas": [
+        {
+          "id": "R1",
+          "valores": {
+            "Días calendario restantes (d)": ">7",
+            "Estado del lote en bodega": "Sí",
+            "Notificación previa enviada": "-"
+          },
+          "entonces": "Clasificar lote en Verde"
+        },
+        {
+          "id": "R2",
+          "valores": {
+            "Días calendario restantes (d)": "3..7",
+            "Estado del lote en bodega": "Sí",
+            "Notificación previa enviada": "No"
+          },
+          "entonces": "Clasificar en Amarillo (advertencia) y notificar a Bodega (CU-19)."
+        },
+        {
+          "id": "R3",
+          "valores": {
+            "Días calendario restantes (d)": "3..7",
+            "Estado del lote en bodega": "Sí",
+            "Notificación previa enviada": "Sí"
+          },
+          "entonces": "Mantener en Amarillo sin duplicar notificación (RN-13)"
+        },
+        {
+          "id": "R4",
+          "valores": {
+            "Días calendario restantes (d)": "<=2",
+            "Estado del lote en bodega": "Sí",
+            "Notificación previa enviada": "No"
+          },
+          "entonces": "Clasificar en Rojo (crítico), bloquear para despacho (RN-16) y notificar a Bodega y Calidad"
+        },
+        {
+          "id": "R5",
+          "valores": {
+            "Días calendario restantes (d)": "<=2",
+            "Estado del lote en bodega": "Sí",
+            "Notificación previa enviada": "Sí"
+          },
+          "entonces": "Mantener en Rojo y bloqueo sin duplicar notificación (RN-13)"
+        },
+        {
+          "id": "R6",
+          "valores": {
+            "Días calendario restantes (d)": "-",
+            "Estado del lote en bodega": "No",
+            "Notificación previa enviada": "-"
+          },
+          "entonces": "No evaluar semáforo (lote ya despachado o rechazado)"
+        }
+      ]
+    }
+  ],
+  "casos_calculo": [
+    {
+      "caso": "FL-01",
+      "frontera": "Temperatura bajo el límite inferior (-0,1 °C)",
+      "temp_c": -0.1,
+      "recep": "2026-11-10",
+      "venc": "2026-11-25",
+      "esperado_a": "Rechazado (desviación térmica) · Semáforo: Verde (15 d)",
+      "esperado_b": "Rechazado (desviación térmica) · Semáforo: Verde (15 d)"
+    },
+    {
+      "caso": "FL-02",
+      "frontera": "Temperatura en límite inferior exacto (0,0 °C)",
+      "temp_c": 0.0,
+      "recep": "2026-11-10",
+      "venc": "2026-11-25",
+      "esperado_a": "Aceptado · Semáforo: Verde (15 d)",
+      "esperado_b": "Aceptado · Semáforo: Verde (15 d)"
+    },
+    {
+      "caso": "FL-03",
+      "frontera": "Temperatura nominal de refrigeración (2,5 °C)",
+      "temp_c": 2.5,
+      "recep": "2026-11-10",
+      "venc": "2026-11-25",
+      "esperado_a": "Aceptado · Semáforo: Verde (15 d)",
+      "esperado_b": "Aceptado · Semáforo: Verde (15 d)"
+    },
+    {
+      "caso": "FL-04",
+      "frontera": "Temperatura en límite superior exacto (4,0 °C)",
+      "temp_c": 4.0,
+      "recep": "2026-11-10",
+      "venc": "2026-11-25",
+      "esperado_a": "Aceptado · Semáforo: Verde (15 d)",
+      "esperado_b": "Aceptado · Semáforo: Verde (15 d)"
+    },
+    {
+      "caso": "FL-05",
+      "frontera": "Temperatura sobre el límite superior (4,1 °C)",
+      "temp_c": 4.1,
+      "recep": "2026-11-10",
+      "venc": "2026-11-25",
+      "esperado_a": "Rechazado (desviación térmica) · Semáforo: Verde (15 d)",
+      "esperado_b": "Rechazado (desviación térmica) · Semáforo: Verde (15 d)"
+    },
+    {
+      "caso": "FL-06",
+      "frontera": "Desviación térmica crítica en recepción (6,2 °C)",
+      "temp_c": 6.2,
+      "recep": "2026-11-10",
+      "venc": "2026-11-25",
+      "esperado_a": "Rechazado (desviación térmica) · Semáforo: Verde (15 d)",
+      "esperado_b": "Rechazado (desviación térmica) · Semáforo: Verde (15 d)"
+    },
+    {
+      "caso": "FL-07",
+      "frontera": "Semáforo: frontera verde (8 días para vencer)",
+      "temp_c": 2.0,
+      "recep": "2026-11-10",
+      "venc": "2026-11-18",
+      "esperado_a": "Aceptado · Semáforo: Verde (8 d)",
+      "esperado_b": "Aceptado · Semáforo: Verde (8 d)"
+    },
+    {
+      "caso": "FL-08",
+      "frontera": "Semáforo: entrada exacta a advertencia amarilla (7 días)",
+      "temp_c": 2.0,
+      "recep": "2026-11-10",
+      "venc": "2026-11-17",
+      "esperado_a": "Aceptado · Semáforo: Amarillo (7 d)",
+      "esperado_b": "Aceptado · Semáforo: Amarillo (7 d)"
+    },
+    {
+      "caso": "FL-09",
+      "frontera": "Semáforo: advertencia amarilla intermedia (5 días)",
+      "temp_c": 2.0,
+      "recep": "2026-11-10",
+      "venc": "2026-11-15",
+      "esperado_a": "Aceptado · Semáforo: Amarillo (5 d)",
+      "esperado_b": "Aceptado · Semáforo: Amarillo (5 d)"
+    },
+    {
+      "caso": "FL-10",
+      "frontera": "Semáforo: frontera crítica roja (2 días para vencer)",
+      "temp_c": 2.0,
+      "recep": "2026-11-10",
+      "venc": "2026-11-12",
+      "esperado_a": "Aceptado · Semáforo: Rojo (2 d)",
+      "esperado_b": "Aceptado · Semáforo: Rojo (2 d)"
+    },
+    {
+      "caso": "FL-11",
+      "frontera": "Semáforo: lote vencido el mismo día (0 días)",
+      "temp_c": 2.0,
+      "recep": "2026-11-10",
+      "venc": "2026-11-10",
+      "esperado_a": "Aceptado · Semáforo: Rojo (0 d)",
+      "esperado_b": "Aceptado · Semáforo: Rojo (0 d)"
+    }
+  ],
+  "preguntas_negocio": [
+    {
+      "id": "PN-01",
+      "pregunta": "¿Cuál es el umbral exacto en días calendario para activar la alerta amarilla y roja del semáforo por familia cárnica (frescos vs. madurados)?",
+      "casos": [
+        "FL-08",
+        "FL-10"
+      ],
+      "dueno": "Jefe de Bodega · Coordinador de Calidad",
+      "estado": "Provisional (7 días amarillo, 2 días rojo; RN-12)"
+    },
+    {
+      "id": "PN-02",
+      "pregunta": "¿Un lote con desviación térmica leve (entre 4,1 °C y 5,0 °C) puede entrar a cuarentena para reproceso o siempre se rechaza definitivamente?",
+      "casos": [
+        "FL-05",
+        "FL-06"
+      ],
+      "dueno": "Coordinador de Calidad · Oficina Jurídica",
+      "estado": "Por confirmar (hoy se rechaza y bloquea; RN-03, RN-04)"
+    },
+    {
+      "id": "PN-03",
+      "pregunta": "¿Cuál es la tolerancia máxima de diferencia en peso (kg) permitida entre la orden de compra y el pesaje en báscula al recibir un lote?",
+      "casos": [
+        "AC-03 (CU-02)"
+      ],
+      "dueno": "Jefe de Bodega",
+      "estado": "Abierta (hoy cualquier diferencia dispara rechazo por inconsistencia)"
+    },
+    {
+      "id": "PN-04",
+      "pregunta": "¿Cuál es el tiempo máximo permitido para sincronizar registros offline de entrega en campo antes de emitir alerta de pérdida de trazabilidad?",
+      "casos": [
+        "AC-16 (CU-01)"
+      ],
+      "dueno": "Encargado de Despacho · Admin TI",
+      "estado": "Provisional (sincronización automática inmediata al recuperar red; RN-11)"
+    }
+  ]
+}

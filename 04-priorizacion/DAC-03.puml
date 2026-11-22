@@ -1,0 +1,38 @@
+@startuml AD-CU03-GenerarOrden
+title Diagrama de Actividades · CU-03 Generar Orden
+
+|Asesor Comercial|
+start
+:Selecciona el cliente o agrega su informacion;
+|Sistema SICIRD|
+:Carga información del cliente;
+|Asesor Comercial|
+:Agrega productos y cantidades a la orden;
+
+|Sistema SICIRD|
+:Verifica disponibilidad de inventario;
+if (¿Hay stock suficiente?) then (No)
+  :Alerta sobre cantidades no disponibles;
+  |Asesor Comercial|
+  :Ajusta cantidades o consulta al cliente;
+  else (si)
+endif
+
+|Sistema SICIRD|
+:Calcula total final;
+:Verifica cartera del cliente;
+
+if (¿Aprobado?) then (Sí)
+  :Establece estado "Orden Aprobada";
+else (No)
+  :Establece estado "Orden Pendiente por Aprobación";
+  :Envía notificación a área encargada;
+endif
+
+:Guarda la orden en el sistema;
+:Genera comprobante de Pedido;
+
+|Asesor Comercial|
+:Envia comprobante de la orden al cliente;
+stop
+@enduml

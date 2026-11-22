@@ -1,0 +1,65 @@
+@startuml DCL-01-SICIRD 
+' DCL-SICIRD · Modelo de Dominio de Requisitos · v1.0
+title DCL-01-SICIRD · Modelo de Dominio del Sistema SICIRD (La Tradición)
+
+class Cliente {
+  +idCliente: String
+  +nombreRazonSocial: String
+  +tipoCliente: String
+  +vidaUtilExigidaDias: int
+  +direccionUbicacion: String
+}
+
+class Pedido {
+  +idPedido: String
+  +fechaPedido: Date
+  +kilosRequeridos: double
+  +estadoPedido: String
+}
+
+class Producto {
+  +idProducto: String
+  +nombreProducto: String
+  +esPerecedero: boolean
+  +vidaUtilSanitariaDias: int
+}
+
+class Lote {
+  +codigoLote: String
+  +fechaEmpaque: Date
+  +fechaVencimiento: Date
+  +kilosDisponibles: double
+  +estadoCalidad: String
+}
+
+class RutaDistribucion {
+  +idRuta: String
+  +fechaRuta: Date
+  +distanciaCalculadaKm: double
+  +secuenciaParadas: String
+}
+
+class RegistroEntrega {
+  +idEntrega: String
+  +kilosEntregados: double
+  +estadoEmpaque: String
+  +firmaCliente: String
+  +fechaHoraRegistro: DateTime
+  +estadoSincronizacion: String
+}
+
+class NovedadRechazo {
+  +idNovedad: String
+  +motivoRechazo: String
+  +kilosAfectados: double
+  +fotoEvidencia: String
+}
+
+Cliente "1" -- "0..*" Pedido : realiza >
+Pedido "1" -- "1..*" Producto : contiene >
+Producto "1" -- "1..*" Lote : producido en >
+Lote "1" -- "0..*" Pedido : reservado para (FEFO) >
+RutaDistribucion "1" -- "1..*" Pedido : agrupa y secuencia >
+Pedido "1" -- "0..1" RegistroEntrega : genera >
+RegistroEntrega "1" *-- "0..1" NovedadRechazo : incluye >
+@enduml

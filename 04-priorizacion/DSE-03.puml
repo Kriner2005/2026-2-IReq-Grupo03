@@ -1,0 +1,28 @@
+@startuml DSE-CU03-GenerarOrden-Short
+
+actor "Asesor Comercial" as Com
+participant "SICIRD (UI)" as UI
+participant "Sistema SICIRD" as System
+database "BD" as DB
+actor "Área Encargada" as Area
+actor "Cliente" as Cliente
+
+Com -> UI: 1. Selecciona cliente y productos
+UI -> System: 2. Verifica stock y calcula total
+alt Stock Insuficiente
+    System --> Com:  Alerta de stock (ajusta cantidades)
+else Stock Suficiente
+    System -> DB: 3. Verifica cartera del cliente
+    alt Cartera Aprobada
+        System -> System: Estado: "Orden Aprobada"
+    else Cartera No Aprobada
+        System -> System: Estado: "Pendiente de Aprobación"
+        System --> Area: Envía notificación de revisión
+    end
+    System -> DB: 4. Guarda orden
+    System -> UI: 5. Genera comprobante de pedido
+    UI --> Com: 6. Muestra comprobante listo
+    Com -> Cliente: 7. Envía comprobante al cliente
+end
+
+@enduml

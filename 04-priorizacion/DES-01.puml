@@ -1,0 +1,39 @@
+@startuml
+' DES-01 · Diagrama de Estados · Ciclo de Vida del Pedido / Entrega en SICIRD
+title DES-01 · Diagrama de Estados: Ciclo de Vida del Pedido y Entrega (SICIRD)
+
+[*] --> Registrado : Pedido ingresado por Asesor Comercial
+
+state "Reserva y Asignación" as Reserva {
+  state "Lote FEFO Reservado" as FEFO
+  state "Reasignado por Novedad" as Reasignado
+}
+
+state "En Tránsito / Ruta" as Ruta
+
+state "Procesado en Campo" as Campo {
+  state "Entregado Conforme" as Conforme
+  state "Rechazado con Novedad" as Rechazado
+}
+
+state "Pendiente Sync (Offline)" as Offline
+state "Sincronizado / Finalizado" as Finalizado : Auditable por INVIMA
+
+Registrado --> FEFO : CU-02 Reservar lote FEFO
+FEFO --> Reasignado : OB-1 Lote bloqueado o insuficiente / CU-02 Ext 3a
+Reasignado --> FEFO : Asignar siguiente lote FEFO válido
+
+FEFO --> Ruta : Despacho asigna pedido a ruta y conductor
+
+Ruta --> Conforme : CU-01 Cliente recibe conforme (peso y firma)
+Ruta --> Rechazado : CU-01 Cliente rechaza total/parcialmente (foto y motivo)
+
+Conforme --> Offline : [Sin conexión de datos]
+Rechazado --> Offline : [Sin conexión de datos]
+
+Conforme --> Finalizado : [Con conexión de datos]
+Rechazado --> Finalizado : [Con conexión de datos]
+
+Offline --> Finalizado : Recuperación de señal de red / Sincronización automática
+Finalizado --> [*]
+@enduml

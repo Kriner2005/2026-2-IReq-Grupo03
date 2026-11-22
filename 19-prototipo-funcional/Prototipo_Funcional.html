@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SICIRD · Prototipo Navegable — La Tradición (Tunja, Boyacá)</title>
+  <!-- Tailwind CSS para diseño responsivo y accesible -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tipografía Inter para alta legibilidad -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#5C1916',      /* Vino / terracota agroindustrial oscuro (alto contraste) */
+              primary: '#7F231E',   /* Terracota cárnico */
+              accent: '#A8322C',
+              cream: '#FAF7F2',     /* Crema cálido */
+              sand: '#EFE9DF',
+              ink: '#1F1A18'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Reglas base de accesibilidad WCAG 2.2 AA (RNF-009.1 / RNF-009.2) */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #FAF7F2;
+      color: #1F1A18;
+      overflow-x: hidden;
+    }
+    /* Anillo de foco visible de 3px en todos los elementos interactivos */
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    canvas:focus-visible {
+      outline: 3px solid #D97706;
+      outline-offset: 2px;
+    }
+    /* Botones táctiles >= 48px de alto para uso en cabina/ruta (RNF-010 / CD-01) */
+    .touch-btn {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    /* Marco simulador móvil 360px+ */
+    .mobile-shell {
+      width: 100%;
+      max-width: 390px;
+      min-height: 740px;
+      border: 10px solid #292220;
+      border-radius: 34px;
+      box-shadow: 0 25px 50px -12px rgba(31, 26, 24, 0.28);
+      background-color: #FAF7F2;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Canvas de firma digital táctil */
+    #signatureCanvas {
+      touch-action: none;
+      cursor: crosshair;
+      background: #FFFFFF;
+    }
+    /* Animación suave para Toast M-02 */
+    @keyframes slideUp {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-toast {
+      animation: slideUp 0.25s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- ===================================================================== -->
+  <!-- BARRA SUPERIOR DE CONTROL DEL PROTOTIPO (MODO, ROL Y TRAZABILIDAD)    -->
+  <!-- ===================================================================== -->
+  <header class="bg-brand-dark text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <!-- Identidad del sistema -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500 text-brand-ink font-extrabold flex items-center justify-center text-lg shadow-inner" aria-hidden="true">
+          LT
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold tracking-tight text-base sm:text-lg">SICIRD</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-white/15 font-medium">La Tradición · Tunja</span>
+          </div>
+          <p class="text-[11px] text-amber-200 hidden sm:block">Prototipo Navegable · Pantallas P-00 a P-09 y Mensajes M-01 a M-06</p>
+        </div>
+      </div>
+
+      <!-- Controles globales de simulación -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Selector Vista/Modo -->
+        <div class="inline-flex rounded-xl bg-black/25 p-1" role="group" aria-label="Selector de entorno de visualización">
+          <button type="button" id="btnModeWeb" onclick="switchEnvironment('web')"
+            class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 bg-white text-brand-dark shadow">
+            <span>🖥️</span> <span>Web Planta</span>
+          </button>
+          <button type="button" id="btnModeMobile" onclick="switchEnvironment('mobile')"
+            class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 text-white hover:bg-white/10">
+            <span>📱</span> <span>Móvil Ruta (360px+)</span>
+          </button>
+        </div>
+
+        <!-- Selector rápido de Rol (Tabla Rol x Pantalla) -->
+        <div class="flex items-center gap-1.5 bg-black/25 px-2.5 py-1 rounded-xl">
+          <label for="quickRoleSelect" class="text-xs text-amber-200 font-medium hidden md:inline">Rol activo:</label>
+          <select id="quickRoleSelect" onchange="quickSwitchRole(this.value)"
+            class="bg-transparent text-white text-xs sm:text-sm font-semibold focus:outline-none cursor-pointer pr-1">
+            <option value="P-00" class="text-gray-900">— P-00 Selección / Ingreso —</option>
+            <option value="transportador" class="text-gray-900">Distribuidor-Transportador (PER-01)</option>
+            <option value="comercial" class="text-gray-900">Asesor Comercial</option>
+            <option value="auxiliar" class="text-gray-900">Auxiliar de Bodega</option>
+            <option value="jefe_bodega" class="text-gray-900">Jefe de Bodega</option>
+            <option value="calidad" class="text-gray-900">Responsable de Calidad</option>
+            <option value="despacho" class="text-gray-900">Encargado de Despacho</option>
+          </select>
+        </div>
+
+        <!-- Botón P-00 / Salir -->
+        <button type="button" onclick="logoutToP00()"
+          class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-brand-ink text-xs sm:text-sm font-bold transition shadow">
+          P-00 / Salir
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de contexto de sesión activa (RNF-003 / RF-017) -->
+    <div id="sessionContextBar" class="hidden bg-brand-primary border-t border-white/15 px-3 sm:px-6 py-1.5 text-xs">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400" aria-hidden="true"></span>
+          <span>Sesión activa: <strong id="ctxUserName">—</strong></span>
+          <span class="px-2 py-0.5 rounded bg-black/25 font-semibold" id="ctxRoleLabel">—</span>
+          <span class="hidden md:inline text-amber-200" id="ctxScreenMeta">Pantalla: —</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-amber-100 hidden sm:inline">Control de acceso verificado (RNF-003 / RF-017)</span>
+          <button type="button" onclick="logoutToP00()" class="underline font-semibold hover:text-amber-200">Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- CONTENEDOR PRINCIPAL                                                  -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5">
+
+    <!-- =================================================================== -->
+    <!-- PANTALLA P-00: INGRESO Y SELECCIÓN DE PERFIL / SESIÓN               -->
+    <!-- =================================================================== -->
+    <section id="screen-P-00" class="max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+        <div class="bg-brand-dark text-white p-6 sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-500 text-brand-ink">
+              Pantalla P-00 · Autenticación y Control de Rol (RF-017 / RNF-003)
+            </span>
+            <span class="text-xs text-amber-200">Sede Principal · Barrio Libertador, Tunja</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Ingreso al Sistema SICIRD</h1>
+          <p class="text-sm sm:text-base text-stone-200 mt-1">
+            Control de Inventario FEFO, Trazabilidad Sanitaria INVIMA y Optimización de Rutas de Distribución para <strong>La Tradición</strong>.
+          </p>
+        </div>
+
+        <div class="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Columna izquierda: Acceso rápido por perfil operativo -->
+          <div class="lg:col-span-7 space-y-4">
+            <h2 class="text-lg font-bold text-brand-ink flex items-center gap-2">
+              <span>1. Seleccione su perfil operativo</span>
+            </h2>
+            <p class="text-xs text-stone-600">
+              Cada rol aterriza directamente en su pantalla de inicio autorizada (Matriz Rol × Pantalla, Sesión 2).
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="roleCardsGrid">
+              <!-- Tarjetas generadas dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Columna derecha: Credenciales y verificación RNF-003 -->
+          <div class="lg:col-span-5 bg-brand-cream rounded-2xl p-5 border border-stone-200 flex flex-col justify-between">
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+              <h2 class="text-base font-bold text-brand-ink">2. Verificación de credenciales</h2>
+              <div>
+                <label for="loginUser" class="block text-xs font-bold text-stone-700 mb-1">Usuario institucional *</label>
+                <input type="text" id="loginUser" required
+                  class="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm font-medium"
+                  value="jmendoza@latradicion.co" />
+              </div>
+              <div>
+                <label for="loginPass" class="block text-xs font-bold text-stone-700 mb-1">Clave de acceso *</label>
+                <input type="password" id="loginPass" required
+                  class="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm font-medium"
+                  value="••••••••••••" />
+              </div>
+              <div id="loginRolePreview" class="p-3 rounded-xl bg-white border border-stone-200 text-xs space-y-1">
+                <div class="font-bold text-brand-primary">Perfil seleccionado: Distribuidor-Transportador</div>
+                <div class="text-stone-600">Pantalla de inicio: <strong>P-01 · Hoja de Ruta Móvil</strong></div>
+                <div class="text-stone-600">Entorno: <strong>Móvil Ruta / Campo (360px+)</strong></div>
+              </div>
+              <button type="submit"
+                class="w-full touch-btn rounded-xl bg-brand-primary hover:bg-brand-dark text-white font-bold text-sm px-4 py-3 shadow transition">
+                Ingresar a mi pantalla de inicio →
+              </button>
+            </form>
+
+            <div class="mt-4 pt-3 border-t border-stone-200 text-[11px] text-stone-600">
+              <strong>Nota de seguridad (RNF-003):</strong> Ocultar opciones del menú no sustituye la validación de permisos en servidor/API.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- ENTORNO MÓVIL RUTA / CAMPO (360px+ · P-01, P-02, P-03, M-01, M-02)  -->
+    <!-- =================================================================== -->
+    <section id="env-mobile" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Panel lateral de control del simulador de campo (solo en escritorio para evaluar) -->
+        <aside class="lg:col-span-5 bg-white rounded-2xl p-5 border border-stone-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900">
+              Simulador Ruta Rural · Tunja
+            </span>
+            <span class="text-xs font-semibold text-stone-500">RNF-010 / RNF-011</span>
+          </div>
+          <h2 class="text-lg font-extrabold text-brand-ink">Control de Conectividad y Trazabilidad</h2>
+          <p class="text-xs text-stone-600 leading-relaxed">
+            Más del <strong>30 %</strong> del recorrido hacia corregimientos rurales como <strong>Runta</strong> y <strong>El Espino</strong> carece de señal móvil (E1, DOL-03). Simule aquí la caída de red y compruebe el almacenamiento local y la sincronización automática (<strong>HU-02</strong>).
+          </p>
+
+          <!-- Interruptor principal M-01 -->
+          <div class="p-4 rounded-xl bg-brand-cream border border-stone-200 space-y-3">
+            <div class="text-xs font-bold text-stone-700 uppercase">Simulador de Cobertura de Datos (M-01)</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="simOnlineBtn" onclick="setNetworkStatus(true)"
+                class="touch-btn px-3 py-2 rounded-xl font-bold text-xs border-2 transition flex flex-col items-center justify-center bg-emerald-700 text-white border-emerald-800">
+                <span>📶 En línea (4G)</span>
+                <span class="text-[10px] font-normal opacity-90">Casco urbano Tunja</span>
+              </button>
+              <button type="button" id="simOfflineBtn" onclick="setNetworkStatus(false)"
+                class="touch-btn px-3 py-2 rounded-xl font-bold text-xs border-2 transition flex flex-col items-center justify-center bg-white text-stone-800 border-stone-300 hover:border-amber-600">
+                <span>📵 Sin red (Offline)</span>
+                <span class="text-[10px] font-normal text-stone-500">Vereda Runta / El Espino</span>
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-xs pt-1">
+              <span>Cola local pendiente: <strong id="asidePendingCount" class="text-brand-primary">0 registros</strong></span>
+              <button type="button" onclick="triggerManualSync()"
+                class="px-2.5 py-1.5 rounded-lg bg-stone-800 text-white font-semibold hover:bg-stone-700">
+                Forzar Sync
+              </button>
+            </div>
+          </div>
+
+          <!-- Lista en vivo de eventos sincronizados / en cola -->
+          <div class="space-y-2">
+            <h3 class="text-xs font-bold uppercase text-stone-700">Bitácora de Transacciones en Campo</h3>
+            <div id="fieldSyncLog" class="space-y-2 max-h-60 overflow-y-auto pr-1 text-xs">
+              <!-- Se llena dinámicamente -->
+            </div>
+          </div>
+        </aside>
+
+        <!-- Dispositivo Móvil 360px+ (Centro de atención) -->
+        <div class="lg:col-span-7 flex justify-center">
+          <div class="mobile-shell" aria-label="Dispositivo móvil del Distribuidor-Transportador">
+            <!-- Barra de estado del teléfono -->
+            <div class="bg-stone-900 text-white px-4 py-1.5 text-[11px] flex items-center justify-between">
+              <span class="font-semibold">08:45 AM · Ruta #R-04</span>
+              <span id="phoneSignalLabel" class="font-bold text-emerald-400">4G · Señal Óptima</span>
+            </div>
+
+            <!-- Cabecera App Móvil -->
+            <div class="bg-brand-dark text-white px-4 py-3 flex items-center justify-between">
+              <div>
+                <div class="text-[11px] text-amber-200 font-semibold" id="mobileHeaderRole">PER-01 · Jairo Mendoza</div>
+                <div class="text-base font-extrabold leading-tight" id="mobileHeaderTitle">P-01 · Hoja de Ruta</div>
+              </div>
+              <button type="button" id="mobileBackBtn" onclick="navigateMobile('P-01')"
+                class="hidden px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold">
+                ← Ruta
+              </button>
+            </div>
+
+            <!-- BANNER M-01: ESTADO DE RED Y COLA OFFLINE -->
+            <div id="banner-M-01" role="status" aria-live="polite"
+              class="px-4 py-2.5 text-xs font-bold flex items-center justify-between transition-colors bg-emerald-800 text-white">
+              <div class="flex items-center gap-2">
+                <span id="m01Icon" aria-hidden="true">📶</span>
+                <span id="m01Text">En línea (4G Tunja) · Sincronizado</span>
+              </div>
+              <button type="button" onclick="toggleNetworkStatus()"
+                class="px-2 py-1 rounded bg-black/25 hover:bg-black/40 text-[11px] underline">
+                Cambiar red
+              </button>
+            </div>
+
+            <!-- CONTENIDO SCROLLEABLE DEL MÓVIL -->
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3.5">
+
+              <!-- VISTA MÓVIL P-01: HOJA DE RUTA Y SECUENCIA DE PARADAS (HU-01) -->
+              <div id="mobile-P-01" class="space-y-3">
+                <!-- Banner explicativo HU-01 -->
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950">
+                  <div class="font-extrabold flex items-center gap-1.5">
+                    <span>❄️ Prioridad Cadena de Frío Activa (HU-01)</span>
+                  </div>
+                  <p class="mt-0.5 text-[11px] leading-snug">
+                    Secuencia optimizada: <strong>1.° Cárnicos perecederos</strong> (carne, morcilla, longaniza) y <strong>al final manteca de cerdo</strong>.
+                  </p>
+                </div>
+
+                <!-- Resumen rápido -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div class="bg-white p-2.5 rounded-xl border border-stone-200">
+                    <div class="text-lg font-extrabold text-brand-primary" id="mobTotalStops">4</div>
+                    <div class="text-[11px] text-stone-600 font-medium">Paradas</div>
+                  </div>
+                  <div class="bg-white p-2.5 rounded-xl border border-stone-200">
+                    <div class="text-lg font-extrabold text-emerald-700" id="mobDoneStops">0</div>
+                    <div class="text-[11px] text-stone-600 font-medium">Completadas</div>
+                  </div>
+                  <div class="bg-white p-2.5 rounded-xl border border-stone-200">
+                    <div class="text-lg font-extrabold text-amber-700" id="mobPendingStops">4</div>
+                    <div class="text-[11px] text-stone-600 font-medium">Pendientes</div>
+                  </div>
+                </div>
+
+                <!-- Lista de paradas secuenciadas -->
+                <div id="mobileStopsList" class="space-y-3">
+                  <!-- Tarjetas de parada generadas por JS -->
+                </div>
+              </div>
+
+              <!-- VISTA MÓVIL P-02: REGISTRO DE ENTREGA CONFORME (CU-01) -->
+              <div id="mobile-P-02" class="hidden space-y-3.5">
+                <div class="bg-white p-3.5 rounded-2xl border border-stone-200 space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">CU-01 · Entrega Conforme</span>
+                    <span class="text-xs font-bold text-stone-500" id="p02StopOrder">Parada #1</span>
+                  </div>
+                  <h3 class="text-base font-extrabold text-brand-ink" id="p02ClientName">Cliente</h3>
+                  <p class="text-xs text-stone-600" id="p02ProductInfo">Producto · Lote</p>
+                </div>
+
+                <form id="formP02" onsubmit="submitEntregaConforme(event)" class="space-y-3.5">
+                  <div class="bg-white p-3.5 rounded-2xl border border-stone-200 space-y-3">
+                    <div>
+                      <label for="p02PesoReal" class="block text-xs font-bold text-stone-800 mb-1">
+                        1. Peso real entregado en báscula (kg) *
+                      </label>
+                      <input type="number" step="0.1" min="0.1" id="p02PesoReal" required
+                        class="w-full touch-btn rounded-xl border-2 border-stone-300 px-3.5 text-lg font-extrabold text-brand-ink" />
+                      <p class="text-[11px] text-stone-500 mt-1" id="p02PesoPactadoHint">Peso pactado: -- kg</p>
+                    </div>
+
+                    <div>
+                      <label class="flex items-center gap-3 p-3 rounded-xl bg-brand-cream border border-stone-200 cursor-pointer touch-btn">
+                        <input type="checkbox" id="p02EmpaqueOk" checked required class="w-5 h-5 accent-emerald-700" />
+                        <span class="text-xs font-bold text-stone-800">
+                          2. Empaque íntegro y cadena de frío verificada en punto de entrega
+                        </span>
+                      </label>
+                    </div>
+
+                    <div>
+                      <div class="flex items-center justify-between mb-1">
+                        <label for="signatureCanvas" class="text-xs font-bold text-stone-800">
+                          3. Firma digital de recibido del cliente *
+                        </label>
+                        <button type="button" onclick="clearSignature()" class="text-xs font-bold text-brand-primary underline px-2 py-1">
+                          Limpiar firma
+                        </button>
+                      </div>
+                      <canvas id="signatureCanvas" width="320" height="120"
+                        class="w-full h-28 rounded-xl border-2 border-dashed border-stone-400"
+                        aria-label="Área táctil para firma digital del cliente"></canvas>
+                      <p class="text-[11px] text-stone-500 mt-1">Deslice el dedo o puntero para firmar.</p>
+                    </div>
+                  </div>
+
+                  <button type="submit"
+                    class="w-full touch-btn rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-sm px-4 py-3.5 shadow-md transition">
+                    ✓ Confirmar Entrega Conforme
+                  </button>
+                </form>
+              </div>
+
+              <!-- VISTA MÓVIL P-03: REGISTRO DE RECHAZO / NOVEDAD CON FOTO (CU-01 Ext. 3a / HU-02.2) -->
+              <div id="mobile-P-03" class="hidden space-y-3.5">
+                <div class="bg-red-50 p-3.5 rounded-2xl border border-red-200 space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-red-700 text-white">CU-01 Ext. 3a · Rechazo / Novedad</span>
+                    <span class="text-xs font-bold text-red-900" id="p03LoteBadge">Lote: --</span>
+                  </div>
+                  <h3 class="text-base font-extrabold text-red-950" id="p03ClientName">Cliente</h3>
+                  <p class="text-xs text-red-800" id="p03ProductInfo">Producto afectado</p>
+                </div>
+
+                <form id="formP03" onsubmit="submitRechazoCampo(event)" class="space-y-3.5">
+                  <div class="bg-white p-3.5 rounded-2xl border border-stone-200 space-y-3">
+                    <div>
+                      <label for="p03Motivo" class="block text-xs font-bold text-stone-800 mb-1">
+                        1. Motivo sanitario o logístico del rechazo *
+                      </label>
+                      <select id="p03Motivo" required
+                        class="w-full touch-btn rounded-xl border-2 border-stone-300 px-3 text-xs font-bold bg-white">
+                        <option value="">— Seleccione motivo —</option>
+                        <option value="Pérdida de cadena de frío / temperatura">Pérdida de cadena de frío / temperatura</option>
+                        <option value="Empaque roto o rasgado en transporte">Empaque roto o rasgado en transporte</option>
+                        <option value="Diferencia de peso en báscula">Diferencia de peso en báscula</option>
+                        <option value="Vida útil insuficiente para el cliente">Vida útil insuficiente para el cliente</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label for="p03KilosRechazados" class="block text-xs font-bold text-stone-800 mb-1">
+                        2. Kilos afectados / devueltos (kg) *
+                      </label>
+                      <input type="number" step="0.1" min="0.1" id="p03KilosRechazados" required
+                        class="w-full touch-btn rounded-xl border-2 border-stone-300 px-3.5 text-lg font-extrabold text-red-800" />
+                    </div>
+
+                    <div>
+                      <span class="block text-xs font-bold text-stone-800 mb-1">
+                        3. Evidencia fotográfica vinculada al lote (RNF-011 &le; 500 KB) *
+                      </span>
+                      <button type="button" id="btnCapturePhoto" onclick="simulatePhotoCapture()"
+                        class="w-full touch-btn rounded-xl border-2 border-dashed border-brand-primary bg-brand-cream hover:bg-amber-50 text-brand-primary font-bold text-xs px-3 py-3 flex items-center justify-center gap-2">
+                        <span>📷 Tomar foto de evidencia del empaque / lote</span>
+                      </button>
+                      <div id="photoPreviewBox" class="hidden mt-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex items-center justify-between">
+                        <div>
+                          <div class="font-bold">🖼️ Evidencia capturada y comprimida</div>
+                          <div class="text-[11px]" id="photoMetaText">evidencia_lote.jpg · 342 KB · Asociada a Lote</div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-emerald-700 text-white font-bold text-[10px]">LISTA</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="submit"
+                    class="w-full touch-btn rounded-2xl bg-red-700 hover:bg-red-800 text-white font-extrabold text-sm px-4 py-3.5 shadow-md transition">
+                    ⚠️ Registrar Rechazo y Vincular al Lote
+                  </button>
+                </form>
+              </div>
+
+            </div>
+
+            <!-- Pie de navegación inferior móvil -->
+            <nav class="bg-white border-t border-stone-200 px-3 py-2 flex items-center justify-between text-[11px] font-bold text-stone-600" aria-label="Navegación inferior móvil">
+              <button type="button" onclick="navigateMobile('P-01')" class="px-3 py-2 rounded-xl hover:bg-stone-100 text-brand-primary">
+                📋 P-01 Ruta
+              </button>
+              <span class="text-stone-400">|</span>
+              <span id="mobileFooterQueue" class="text-stone-700">Cola offline: 0</span>
+              <span class="text-stone-400">|</span>
+              <button type="button" onclick="logoutToP00()" class="px-3 py-2 rounded-xl hover:bg-stone-100">
+                🚪 Salir
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- ENTORNO WEB PLANTA (BARRIO LIBERTADOR, TUNJA · P-04 a P-09)         -->
+    <!-- =================================================================== -->
+    <section id="env-web" class="hidden space-y-5">
+
+      <!-- Menú de navegación Web filtrado estrictamente por Rol (Tabla Rol x Pantalla) -->
+      <nav aria-label="Menú principal del módulo web de planta" class="bg-white rounded-2xl p-2 border border-stone-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1.5" id="webRoleMenu">
+          <!-- Botones de pantalla generados según permisos del rol -->
+        </div>
+        <div class="text-xs text-stone-500 px-2 hidden xl:block">
+          Menú dinámico según Matriz Rol × Pantalla (RNF-003)
+        </div>
+      </nav>
+
+      <!-- ================================================================= -->
+      <!-- PANTALLA P-04: BODEGA · INGRESO DE LOTES Y CLASIFICACIÓN FRÍO     -->
+      <!-- ================================================================= -->
+      <div id="web-P-04" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-primary">Pantalla P-04 · CU-03 / CU-04 (G1.1 – G1.4)</span>
+            <h2 class="text-2xl font-extrabold text-brand-ink">Bodega: Ingreso de Lotes y Clasificación Térmica</h2>
+          </div>
+          <span class="text-xs px-3 py-1.5 rounded-xl bg-amber-100 text-amber-950 font-bold">
+            Regla G1.2: Bloqueo automático si vida útil &lt; mínimo sanitario de Calidad
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Formulario de ingreso de lote -->
+          <div class="lg:col-span-5 bg-white rounded-2xl p-5 border border-stone-200 shadow-sm">
+            <h3 class="text-base font-bold text-brand-ink mb-3">Registrar Nuevo Lote en Bodega</h3>
+            <form id="formP04" onsubmit="submitNuevoLote(event)" class="space-y-3.5">
+              <div>
+                <label for="p04Producto" class="block text-xs font-bold text-stone-700 mb-1">Producto derivado cárnico / manteca *</label>
+                <select id="p04Producto" onchange="autoClassifyColdChain()" required
+                  class="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm font-semibold bg-white">
+                  <option value="Carne de Cerdo Fresca|Perecedero (0°C a 4°C)|12">Carne de Cerdo Fresca (Mín. sanitario: 12 días)</option>
+                  <option value="Morcilla Artesanal|Perecedero (0°C a 4°C)|10">Morcilla Artesanal (Mín. sanitario: 10 días)</option>
+                  <option value="Longaniza Especial|Perecedero (0°C a 4°C)|15">Longaniza Especial (Mín. sanitario: 15 días)</option>
+                  <option value="Manteca de Cerdo Pura|No perecedero (Bodega seca)|60">Manteca de Cerdo Pura (Mín. sanitario: 60 días)</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="p04CodigoLote" class="block text-xs font-bold text-stone-700 mb-1">Código de Lote *</label>
+                  <input type="text" id="p04CodigoLote" required value="LT-2026-089"
+                    class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-bold uppercase" />
+                </div>
+                <div>
+                  <label for="p04Peso" class="block text-xs font-bold text-stone-700 mb-1">Peso ingresado (kg) *</label>
+                  <input type="number" step="0.5" min="1" id="p04Peso" required value="120"
+                    class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-bold" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="p04FechaEmpaque" class="block text-xs font-bold text-stone-700 mb-1">Fecha de empaque *</label>
+                  <input type="date" id="p04FechaEmpaque" required value="2026-11-21"
+                    class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium" />
+                </div>
+                <div>
+                  <label for="p04DiasVida" class="block text-xs font-bold text-stone-700 mb-1">Días de vida útil restante *</label>
+                  <input type="number" min="1" max="365" id="p04DiasVida" required value="18"
+                    class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-bold" />
+                  <p class="text-[11px] text-stone-500 mt-0.5">Prueba poner &lt; 12 días para disparar M-05</p>
+                </div>
+              </div>
+
+              <div>
+                <label for="p04ClasificacionFrio" class="block text-xs font-bold text-stone-700 mb-1">Clasificación térmica (Jefe de Bodega · G1.4) *</label>
+                <input type="text" id="p04ClasificacionFrio" readonly value="Perecedero (0°C a 4°C)"
+                  class="w-full rounded-xl border border-stone-200 bg-brand-cream px-3 py-2 text-sm font-bold text-brand-primary" />
+              </div>
+
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button type="submit"
+                  class="flex-1 touch-btn rounded-xl bg-brand-primary hover:bg-brand-dark text-white font-bold text-sm px-4 py-2.5 shadow transition">
+                  Registrar Lote en Inventario
+                </button>
+                <button type="button" onclick="simulateBlockedLotM05()"
+                  class="touch-btn rounded-xl bg-red-50 hover:bg-red-100 text-red-800 border border-red-300 font-bold text-xs px-3 py-2.5 transition">
+                  Simular Lote Corto (M-05)
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Tabla resumen de inventario ingresado -->
+          <div class="lg:col-span-7 bg-white rounded-2xl p-5 border border-stone-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-brand-ink">Inventario Activo por Lote (Ordenado por FEFO)</h3>
+              <span class="text-xs text-stone-500" id="p04LotCount">5 lotes registrados</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b-2 border-stone-200 text-stone-600 uppercase">
+                    <th class="py-2.5 px-2">Lote</th>
+                    <th class="py-2.5 px-2">Producto</th>
+                    <th class="py-2.5 px-2">Clasificación</th>
+                    <th class="py-2.5 px-2">Disponible</th>
+                    <th class="py-2.5 px-2">Vida Útil</th>
+                    <th class="py-2.5 px-2">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="p04InventoryTable" class="divide-y divide-stone-100">
+                  <!-- Filas dinámicas -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- PANTALLA P-05 & P-06: COMERCIAL · TOMA DE PEDIDO Y RESERVA FEFO   -->
+      <!-- ================================================================= -->
+      <div id="web-P-05" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-primary">Pantallas P-05 y P-06 · CU-02 (G2.1 – G2.3 / Obstáculo OB-1)</span>
+            <h2 class="text-2xl font-extrabold text-brand-ink">Comercial: Toma de Pedido y Asignación Automática FEFO</h2>
+          </div>
+          <button type="button" onclick="simulateOB1Reassignment()"
+            class="touch-btn rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 shadow transition">
+            ⚡ Simular Obstáculo OB-1 / Ext. 3a (Reasignar Lote + M-04)
+          </button>
+        </div>
+
+        <!-- Notificación M-04 visible cuando ocurre reasignación -->
+        <div id="banner-M-04" class="hidden p-4 rounded-2xl bg-amber-50 border-2 border-amber-500 text-amber-950 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <span class="text-xl" aria-hidden="true">🔔</span>
+            <div>
+              <div class="text-xs font-extrabold uppercase tracking-wide text-amber-800">Mensaje M-04 · Notificación al Jefe de Bodega (G2.3)</div>
+              <p class="text-sm font-bold mt-0.5" id="m04Text">
+                El lote FEFO prioritario presentó bloqueo/insuficiencia. Se reasignó automáticamente el siguiente lote válido.
+              </p>
+            </div>
+          </div>
+          <button type="button" onclick="document.getElementById('banner-M-04').classList.add('hidden')"
+            class="text-xs font-bold underline px-2 py-1">Ocultar aviso</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Formulario P-05 -->
+          <div class="lg:col-span-6 bg-white rounded-2xl p-5 border border-stone-200 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-brand-ink">P-05 · Nuevo Pedido Comercial</h3>
+            <form id="formP05" onsubmit="submitPedidoFEFO(event)" class="space-y-3.5">
+              <div>
+                <label for="p05Cliente" class="block text-xs font-bold text-stone-700 mb-1">Cliente y destino de entrega *</label>
+                <select id="p05Cliente" required class="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm font-semibold bg-white">
+                  <option value="Fama La Central · Centro Tunja|Urbano">Fama La Central · Centro Tunja (Urbano)</option>
+                  <option value="Asadero El Fogón Boyacense · Runta|Rural - Sin red">Asadero El Fogón Boyacense · Vereda Runta (Rural sin red)</option>
+                  <option value="Tienda Don Pedro · El Espino|Rural - Sin red">Tienda Don Pedro · Vereda El Espino (Rural sin red)</option>
+                  <option value="Panadería La Espiga · Maldonado Tunja|Urbano">Panadería La Espiga · Barrio Maldonado Tunja (Urbano)</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="p05Producto" class="block text-xs font-bold text-stone-700 mb-1">Producto solicitado *</label>
+                  <select id="p05Producto" onchange="previewFefoLot()" required
+                    class="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm font-semibold bg-white">
+                    <option value="Carne de Cerdo Fresca">Carne de Cerdo Fresca</option>
+                    <option value="Morcilla Artesanal">Morcilla Artesanal</option>
+                    <option value="Longaniza Especial">Longaniza Especial</option>
+                    <option value="Manteca de Cerdo Pura">Manteca de Cerdo Pura</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="p05Kilos" class="block text-xs font-bold text-stone-700 mb-1">Kilos requeridos (kg) *</label>
+                  <input type="number" step="0.5" min="1" id="p05Kilos" oninput="previewFefoLot()" required value="25"
+                    class="w-full rounded-xl border border-stone-300 px-3 py-2.5 text-sm font-bold" />
+                </div>
+              </div>
+
+              <!-- Previsualización FEFO en tiempo real -->
+              <div id="p05FefoPreview" class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs space-y-1">
+                <div class="font-extrabold text-emerald-950">✓ Lote FEFO candidato asignado automáticamente:</div>
+                <div id="p05FefoDetails" class="text-emerald-900">Cargando lote FEFO...</div>
+              </div>
+
+              <button type="submit"
+                class="w-full touch-btn rounded-xl bg-brand-primary hover:bg-brand-dark text-white font-bold text-sm px-4 py-3 shadow transition">
+                Confirmar Reserva FEFO y Enviar a Despacho →
+              </button>
+            </form>
+          </div>
+
+          <!-- Panel P-06: Detalle de Reasignación Automática de Lote (OB-1) -->
+          <div class="lg:col-span-6 space-y-4">
+            <div id="web-P-06" class="bg-white rounded-2xl p-5 border-2 border-stone-200 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-extrabold uppercase px-2.5 py-1 rounded-lg bg-stone-800 text-white">
+                  Pantalla P-06 · Estrategia de Restauración (OB-1 / G2.3)
+                </span>
+                <span class="text-xs font-semibold text-stone-500">CU-02 Ext. 3a</span>
+              </div>
+              <h3 class="text-base font-extrabold text-brand-ink">Detalle de Asignación y Reasignación de Lote FEFO</h3>
+              <div id="p06ReassignmentCard" class="p-4 rounded-xl bg-brand-cream border border-stone-200 text-xs space-y-2">
+                <p class="text-stone-700">
+                  Cuando el lote FEFO con vencimiento más próximo se encuentra <strong>bloqueado por Calidad</strong> o tiene <strong>stock insuficiente</strong>, SICIRD ejecuta automáticamente la submeta <strong>G2.3</strong>:
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <div class="p-2.5 rounded-lg bg-red-50 border border-red-200">
+                    <div class="font-bold text-red-900">Lote descartado (OB-1):</div>
+                    <div class="text-red-800 mt-0.5" id="p06OldLot">LT-2026-079 (Bloqueado por Calidad)</div>
+                  </div>
+                  <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+                    <div class="font-bold text-emerald-900">Lote FEFO asignado (G2.3):</div>
+                    <div class="text-emerald-800 mt-0.5" id="p06NewLot">LT-2026-081 (18 días vida útil · Válido)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pedidos comprometidos -->
+            <div class="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm space-y-2">
+              <h4 class="text-sm font-bold text-brand-ink">Pedidos Comprometidos con Lote FEFO</h4>
+              <div id="p05OrdersList" class="space-y-2 text-xs">
+                <!-- Lista dinámica -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- PANTALLA P-07: CALIDAD Y BODEGA · SEMÁFORO VENCIMIENTOS Y BLOQUEO -->
+      <!-- ================================================================= -->
+      <div id="web-P-07" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-primary">Pantalla P-07 · CU-04, CU-05, CU-08 (G4.1 – G4.4 / RNF-009.2)</span>
+            <h2 class="text-2xl font-extrabold text-brand-ink">Calidad y Bodega: Semáforo de Vencimientos y Bloqueos</h2>
+          </div>
+          <button type="button" onclick="triggerDailyAlertM03()"
+            class="touch-btn rounded-xl bg-amber-500 hover:bg-amber-400 text-brand-ink font-extrabold text-xs px-4 py-2 shadow transition">
+            ⏰ Ejecutar Planificador Diario (CU-08 · Alerta M-03)
+          </button>
+        </div>
+
+        <!-- Banner M-03: Notificación diaria de lotes en advertencia comercial -->
+        <div id="banner-M-03" class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <span class="text-xl" aria-hidden="true">⚠️</span>
+            <div>
+              <div class="text-xs font-extrabold uppercase text-amber-900">Mensaje M-03 · Alerta Semáforo de Vencimientos (G4.2 / G4.3)</div>
+              <p class="text-sm font-semibold mt-0.5" id="m03Text">
+                El lote <strong>LT-2026-080 (Morcilla Artesanal · 45 kg)</strong> entró en estado <strong>ADVERTENCIA COMERCIAL (11 días restantes)</strong>. Priorizar venta hoy.
+              </p>
+            </div>
+          </div>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-200 text-amber-950">WCAG 2.2 AA: Color + Icono + Texto</span>
+        </div>
+
+        <!-- Tabla accesible de semáforo (Color + Icono + Texto explícito) -->
+        <div class="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="border-b-2 border-stone-200 text-stone-600 uppercase text-xs">
+                <th class="py-3 px-2">Código Lote</th>
+                <th class="py-3 px-2">Producto</th>
+                <th class="py-3 px-2">Clasificación</th>
+                <th class="py-3 px-2">Stock (kg)</th>
+                <th class="py-3 px-2">Vida Útil</th>
+                <th class="py-3 px-2">Estado Semáforo (Accesible)</th>
+                <th class="py-3 px-2">Acción Calidad / Bodega</th>
+              </tr>
+            </thead>
+            <tbody id="p07SemaphoreTable" class="divide-y divide-stone-100">
+              <!-- Filas generadas dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- PANTALLA P-08: DESPACHO · PLANIFICACIÓN Y MONITOREO DE RUTAS      -->
+      <!-- ================================================================= -->
+      <div id="web-P-08" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-primary">Pantalla P-08 · CU-06, CU-07, CU-10 (G3.1 – G3.3 / HU-01)</span>
+            <h2 class="text-2xl font-extrabold text-brand-ink">Despacho: Secuenciación Térmica y Monitoreo de Ruta</h2>
+          </div>
+          <button type="button" onclick="optimizeRouteHU01()"
+            class="touch-btn rounded-xl bg-brand-primary hover:bg-brand-dark text-white font-bold text-xs px-4 py-2.5 shadow transition">
+            🚚 Optimizar y Secuenciar Ruta (HU-01 · Aviso M-06)
+          </button>
+        </div>
+
+        <!-- Aviso M-06: Confirmación de ruta secuenciada con prioridad frío -->
+        <div id="banner-M-06" class="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-xl" aria-hidden="true">❄️</span>
+            <div>
+              <div class="text-xs font-extrabold uppercase text-emerald-800">Mensaje M-06 · Secuencia de Ruta Validada (HU-01 / G3.1)</div>
+              <p class="text-sm font-semibold">
+                Paradas 1 a 3 asignadas a <strong>derivados cárnicos perecederos</strong>; Parada 4 asignada al final para <strong>manteca de cerdo</strong>. Ahorro estimado de recorrido: 18 %.
+              </p>
+            </div>
+          </div>
+          <button type="button" onclick="switchEnvironment('mobile')"
+            class="px-3 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs hover:bg-emerald-800 shrink-0">
+            Ver en App Conductor →
+          </button>
+        </div>
+
+        <!-- Tabla de monitoreo en tiempo real sincronizada con el simulador móvil -->
+        <div class="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-brand-ink">Estado en Vivo de Paradas · Ruta #R-04 (Jairo Mendoza)</h3>
+            <span class="text-xs font-semibold text-stone-500">Se actualiza automáticamente con sincronización móvil (CU-07)</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="border-b-2 border-stone-200 text-stone-600 uppercase text-xs">
+                  <th class="py-2.5 px-2">Orden</th>
+                  <th class="py-2.5 px-2">Cliente / Zona</th>
+                  <th class="py-2.5 px-2">Producto y Lote FEFO</th>
+                  <th class="py-2.5 px-2">Prioridad Térmica</th>
+                  <th class="py-2.5 px-2">Estado en Planta</th>
+                  <th class="py-2.5 px-2">Evidencia / Novedad</th>
+                </tr>
+              </thead>
+              <tbody id="p08DispatchTable" class="divide-y divide-stone-100">
+                <!-- Filas dinámicas -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- PANTALLA P-09: CALIDAD · TRAZABILIDAD SANITARIA INVIMA            -->
+      <!-- ================================================================= -->
+      <div id="web-P-09" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-primary">Pantalla P-09 · CU-09 (G5.1 – G5.3 / RNF-004.5)</span>
+            <h2 class="text-2xl font-extrabold text-brand-ink">Calidad: Consulta y Reporte de Trazabilidad Sanitaria INVIMA</h2>
+          </div>
+          <button type="button" onclick="exportInvimaReport()"
+            class="touch-btn rounded-xl bg-brand-dark hover:bg-black text-white font-bold text-xs px-4 py-2.5 shadow transition">
+            📄 Exportar Acta / Reporte INVIMA (&le; 15 s)
+          </button>
+        </div>
+
+        <!-- Buscador por código de lote -->
+        <div class="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="flex-1 min-w-[220px]">
+              <label for="p09LotSearch" class="block text-xs font-bold text-stone-700 mb-1">
+                Seleccione o busque código de lote para trazabilidad bidireccional:
+              </label>
+              <select id="p09LotSearch" onchange="renderInvimaTraceability(this.value)"
+                class="w-full rounded-xl border border-stone-300 px-3.5 py-2.5 text-sm font-bold bg-white">
+                <!-- Opciones dinámicas -->
+              </select>
+            </div>
+            <div class="text-xs text-stone-600 bg-brand-cream px-3.5 py-2.5 rounded-xl border border-stone-200">
+              Cobertura: <strong>Ingreso Bodega → Temperatura → Pedido/Cliente → Ruta → Entregas/Rechazos</strong>
+            </div>
+          </div>
+
+          <!-- Línea de tiempo bidireccional del lote -->
+          <div id="p09TraceContainer" class="pt-2 space-y-4">
+            <!-- Renderizado dinámico de la traza sanitaria -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL M-05: ALERTA BLOQUEO AUTOMÁTICO POR VIDA ÚTIL MÍNIMA (CU-03)    -->
+  <!-- ===================================================================== -->
+  <div id="modal-M-05" role="dialog" aria-modal="true" aria-labelledby="m05Title"
+    class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-2 border-red-600 space-y-4">
+      <div class="flex items-center gap-3 text-red-700">
+        <span class="text-3xl" aria-hidden="true">🛑</span>
+        <div>
+          <span class="text-[11px] font-extrabold uppercase tracking-wider bg-red-100 text-red-900 px-2 py-0.5 rounded">
+            Mensaje M-05 · Bloqueo Sanitario Automático (G1.2)
+          </span>
+          <h3 id="m05Title" class="text-lg font-extrabold text-red-950 mt-0.5">Lote Bloqueado por Vida Útil Insuficiente</h3>
+        </div>
+      </div>
+      <p id="m05Body" class="text-sm text-stone-700 leading-relaxed">
+        El lote ingresado no cumple con la vida útil sanitaria mínima definida por el Responsable de Calidad. Queda bloqueado automáticamente para despacho comercial.
+      </p>
+      <div class="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-900 font-semibold">
+        Acción requerida: El Responsable de Calidad debe evaluar disposición sanitaria en P-07.
+      </div>
+      <div class="flex justify-end">
+        <button type="button" onclick="closeModalM05()"
+          class="touch-btn px-5 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 text-white font-bold text-sm">
+          Entendido · Registrar como Bloqueado
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- TOAST M-02: SINCRONIZACIÓN COMPLETADA / AVISOS DEL SISTEMA            -->
+  <!-- ===================================================================== -->
+  <div id="toast-M-02" role="status" aria-live="polite"
+    class="hidden fixed bottom-5 right-5 z-50 max-w-sm bg-stone-900 text-white px-4 py-3.5 rounded-2xl shadow-2xl border border-emerald-500 animate-toast">
+    <div class="flex items-start gap-3">
+      <span class="text-xl" aria-hidden="true" id="toastIcon">✅</span>
+      <div class="text-xs space-y-0.5">
+        <div class="font-extrabold text-emerald-400 uppercase tracking-wide" id="toastTitle">Mensaje M-02 · Sincronización Completada</div>
+        <p class="text-stone-200 leading-snug" id="toastBody">Los registros offline se sincronizaron con la planta.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- LÓGICA DE ESTADO, TRAZABILIDAD Y SIMULACIÓN DEL PROTOTIPO SICIRD      -->
+  <!-- ===================================================================== -->
+  <script>
+    // =========================================================================
+    // 1. CATÁLOGO DE ROLES Y PERMISOS (Matriz Rol x Pantalla · Sesión 2)
+    // =========================================================================
+    const ROLES = {
+      transportador: {
+        id: 'transportador',
+        label: 'Distribuidor-Transportador',
+        user: 'Jairo Mendoza (PER-01)',
+        email: 'jmendoza@latradicion.co',
+        env: 'mobile',
+        startScreen: 'P-01',
+        allowedScreens: ['P-01', 'P-02', 'P-03'],
+        desc: 'Reparto en ruta urbana/veredal, entregas con firma y rechazos offline.'
+      },
+      comercial: {
+        id: 'comercial',
+        label: 'Asesor Comercial',
+        user: 'Andrea Suárez',
+        email: 'asuarez@latradicion.co',
+        env: 'web',
+        startScreen: 'P-05',
+        allowedScreens: ['P-05', 'P-07'],
+        desc: 'Toma de pedidos, reserva automática FEFO y promoción de lotes en advertencia.'
+      },
+      auxiliar: {
+        id: 'auxiliar',
+        label: 'Auxiliar de Bodega',
+        user: 'Carlos Rojas',
+        email: 'crojas@latradicion.co',
+        env: 'web',
+        startScreen: 'P-04',
+        allowedScreens: ['P-04'],
+        desc: 'Ingreso físico de mercancía por lote, pesos y fechas de vencimiento.'
+      },
+      jefe_bodega: {
+        id: 'jefe_bodega',
+        label: 'Jefe de Bodega',
+        user: 'Héctor Villamil',
+        email: 'hvillamil@latradicion.co',
+        env: 'web',
+        startScreen: 'P-07',
+        allowedScreens: ['P-04', 'P-07', 'P-09'],
+        desc: 'Clasificación térmica, control FEFO, alertas OB-1 y trazabilidad.'
+      },
+      calidad: {
+        id: 'calidad',
+        label: 'Responsable de Calidad',
+        user: 'Ing. Laura Peña',
+        email: 'lpena@latradicion.co',
+        env: 'web',
+        startScreen: 'P-07',
+        allowedScreens: ['P-07', 'P-09'],
+        desc: 'Umbrales sanitarios, bloqueos preventivos y reportes INVIMA.'
+      },
+      despacho: {
+        id: 'despacho',
+        label: 'Encargado de Despacho',
+        user: 'Miguel Ángel Torres',
+        email: 'mtorres@latradicion.co',
+        env: 'web',
+        startScreen: 'P-08',
+        allowedScreens: ['P-08'],
+        desc: 'Optimización y secuenciación térmica de rutas (HU-01) y monitoreo.'
+      }
+    };
+
+    const WEB_SCREEN_META = {
+      'P-04': 'P-04 · Bodega: Ingreso de Lotes',
+      'P-05': 'P-05/P-06 · Comercial: Pedidos FEFO',
+      'P-07': 'P-07 · Calidad/Bodega: Semáforo',
+      'P-08': 'P-08 · Despacho: Rutas y Monitoreo',
+      'P-09': 'P-09 · Calidad: Reporte INVIMA'
+    };
+
+    // =========================================================================
+    // 2. DATOS INICIALES DEL DOMINIO (LA TRADICIÓN · TUNJA, BOYACÁ)
+    // =========================================================================
+    let state = {
+      currentRoleKey: 'transportador',
+      activeEnv: 'P-00', // 'P-00' | 'mobile' | 'web'
+      activeMobileScreen: 'P-01',
+      activeWebScreen: 'P-05',
+      selectedStopId: null,
+      isOnline: true,
+      offlineQueue: [],
+      photoCaptured: false,
+      hasSigned: false,
+
+      // Inventario de Lotes (ordenados FEFO)
+      lots: [
+        {
+          code: 'LT-2026-079',
+          product: 'Carne de Cerdo Fresca',
+          coldClass: 'Perecedero (0°C a 4°C)',
+          isPerishable: true,
+          packDate: '2026-11-10',
+          daysLeft: 6,
+          minSanitaryDays: 12,
+          stockKg: 40,
+          status: 'BLOQUEADO',
+          reason: 'Vida útil (6 días) menor al mínimo sanitario (12 días) — Bloqueo automático G1.2'
+        },
+        {
+          code: 'LT-2026-080',
+          product: 'Morcilla Artesanal',
+          coldClass: 'Perecedero (0°C a 4°C)',
+          isPerishable: true,
+          packDate: '2026-11-14',
+          daysLeft: 11,
+          minSanitaryDays: 10,
+          stockKg: 45,
+          status: 'ADVERTENCIA',
+          reason: 'Próximo a umbral sanitario (11 días) — Prioridad comercial M-03'
+        },
+        {
+          code: 'LT-2026-081',
+          product: 'Carne de Cerdo Fresca',
+          coldClass: 'Perecedero (0°C a 4°C)',
+          isPerishable: true,
+          packDate: '2026-11-18',
+          daysLeft: 18,
+          minSanitaryDays: 12,
+          stockKg: 150,
+          status: 'OPTIMO',
+          reason: 'Cumple cadena de frío y vida útil sanitaria'
+        },
+        {
+          code: 'LT-2026-082',
+          product: 'Longaniza Especial',
+          coldClass: 'Perecedero (0°C a 4°C)',
+          isPerishable: true,
+          packDate: '2026-11-19',
+          daysLeft: 22,
+          minSanitaryDays: 15,
+          stockKg: 95,
+          status: 'OPTIMO',
+          reason: 'Cumple cadena de frío y vida útil sanitaria'
+        },
+        {
+          code: 'LT-2026-083',
+          product: 'Manteca de Cerdo Pura',
+          coldClass: 'No perecedero (Bodega seca)',
+          isPerishable: false,
+          packDate: '2026-11-15',
+          daysLeft: 75,
+          minSanitaryDays: 60,
+          stockKg: 300,
+          status: 'OPTIMO',
+          reason: 'Producto estable sin requerimiento de refrigeración'
+        }
+      ],
+
+      // Paradas de la Ruta #R-04 (Secuenciadas bajo HU-01: perecederos primero, manteca al final)
+      stops: [
+        {
+          id: 'PED-101',
+          order: 1,
+          client: 'Fama La Central',
+          zone: 'Centro Tunja (Urbano · 4G)',
+          isRuralNoSignal: false,
+          product: 'Carne de Cerdo Fresca',
+          lotCode: 'LT-2026-081',
+          expectedKg: 30,
+          isPerishable: true,
+          status: 'PENDIENTE', // PENDIENTE | ENTREGADO | RECHAZADO
+          syncState: 'SYNCED', // SYNCED | PENDING_SYNC
+          evidence: 'En tránsito · Prioridad fría #1'
+        },
+        {
+          id: 'PED-102',
+          order: 2,
+          client: 'Asadero El Fogón Boyacense',
+          zone: 'Vereda Runta (Rural · Sin red)',
+          isRuralNoSignal: true,
+          product: 'Morcilla Artesanal',
+          lotCode: 'LT-2026-080',
+          expectedKg: 20,
+          isPerishable: true,
+          status: 'PENDIENTE',
+          syncState: 'SYNCED',
+          evidence: 'En tránsito · Prioridad fría #2'
+        },
+        {
+          id: 'PED-103',
+          order: 3,
+          client: 'Tienda Don Pedro',
+          zone: 'Vereda El Espino (Rural · Sin red)',
+          isRuralNoSignal: true,
+          product: 'Longaniza Especial',
+          lotCode: 'LT-2026-082',
+          expectedKg: 15,
+          isPerishable: true,
+          status: 'PENDIENTE',
+          syncState: 'SYNCED',
+          evidence: 'En tránsito · Prioridad fría #3'
+        },
+        {
+          id: 'PED-104',
+          order: 4,
+          client: 'Panadería La Espiga',
+          zone: 'Barrio Maldonado Tunja (Urbano)',
+          isRuralNoSignal: false,
+          product: 'Manteca de Cerdo Pura',
+          lotCode: 'LT-2026-083',
+          expectedKg: 50,
+          isPerishable: false,
+          status: 'PENDIENTE',
+          syncState: 'SYNCED',
+          evidence: 'En tránsito · Tramo final no perecedero (HU-01)'
+        }
+      ],
+
+      // Pedidos creados desde Comercial P-05
+      commercialOrders: [
+        {
+          id: 'PED-101',
+          client: 'Fama La Central · Centro Tunja',
+          product: 'Carne de Cerdo Fresca',
+          kg: 30,
+          lotCode: 'LT-2026-081',
+          note: 'Asignación FEFO directa (18 días vida útil)'
+        },
+        {
+          id: 'PED-102',
+          client: 'Asadero El Fogón Boyacense · Runta',
+          product: 'Morcilla Artesanal',
+          kg: 20,
+          lotCode: 'LT-2026-080',
+          note: 'Lote promocionado desde semáforo M-03 (11 días vida útil)'
+        }
+      ]
+    };
+
+    // =========================================================================
+    // 3. INICIALIZACIÓN Y RENDERIZADO DE P-00
+    // =========================================================================
+    function initApp() {
+      renderRoleCardsP00();
+      setupSignatureCanvas();
+      renderAll();
+      addSyncLog('Sistema SICIRD iniciado en planta Barrio Libertador, Tunja.', 'info');
+    }
+
+    function renderRoleCardsP00() {
+      const container = document.getElementById('roleCardsGrid');
+      container.innerHTML = '';
+      Object.values(ROLES).forEach(role => {
+        const isSelected = state.currentRoleKey === role.id;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.onclick = () => selectRoleOnP00(role.id);
+        card.className = `text-left p-3.5 rounded-xl border-2 transition flex flex-col justify-between ${
+          isSelected
+            ? 'border-brand-primary bg-amber-50/70 shadow-sm'
+            : 'border-stone-200 bg-white hover:border-stone-400'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span class="text-xs font-extrabold text-brand-ink">${role.label}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              role.env === 'mobile' ? 'bg-amber-200 text-amber-950' : 'bg-stone-200 text-stone-800'
+            }">${role.env === 'mobile' ? '📱 Móvil' : '🖥️ Web'}</span>
+          </div>
+          <p class="text-[11px] text-stone-600 leading-snug">${role.desc}</p>
+          <div class="mt-2 text-[11px] font-bold text-brand-primary">Inicio: ${role.startScreen}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectRoleOnP00(roleKey) {
+      state.currentRoleKey = roleKey;
+      const role = ROLES[roleKey];
+      document.getElementById('loginUser').value = role.email;
+      document.getElementById('loginRolePreview').innerHTML = `
+        <div class="font-bold text-brand-primary">Perfil seleccionado: ${role.label} (${role.user})</div>
+        <div class="text-stone-600">Pantalla de inicio: <strong>${role.startScreen}</strong></div>
+        <div class="text-stone-600">Entorno: <strong>${role.env === 'mobile' ? 'Móvil Ruta / Campo (360px+)' : 'Plataforma Web de Planta'}</strong></div>
+      `;
+      renderRoleCardsP00();
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      enterRoleSession(state.currentRoleKey);
+    }
+
+    function quickSwitchRole(val) {
+      if (val === 'P-00') {
+        logoutToP00();
+        return;
+      }
+      enterRoleSession(val);
+    }
+
+    function enterRoleSession(roleKey) {
+      state.currentRoleKey = roleKey;
+      const role = ROLES[roleKey];
+      document.getElementById('quickRoleSelect').value = roleKey;
+
+      // Actualizar barra de contexto RNF-003
+      const ctxBar = document.getElementById('sessionContextBar');
+      ctxBar.classList.remove('hidden');
+      document.getElementById('ctxUserName').textContent = role.user;
+      document.getElementById('ctxRoleLabel').textContent = role.label;
+
+      if (role.env === 'mobile') {
+        state.activeEnv = 'mobile';
+        state.activeMobileScreen = role.startScreen;
+      } else {
+        state.activeEnv = 'web';
+        state.activeWebScreen = role.startScreen;
+      }
+      renderAll();
+    }
+
+    function logoutToP00() {
+      state.activeEnv = 'P-00';
+      document.getElementById('quickRoleSelect').value = 'P-00';
+      document.getElementById('sessionContextBar').classList.add('hidden');
+      renderAll();
+    }
+
+    function switchEnvironment(targetEnv) {
+      if (targetEnv === 'mobile') {
+        if (ROLES[state.currentRoleKey].env !== 'mobile') {
+          state.currentRoleKey = 'transportador';
+        }
+        enterRoleSession(state.currentRoleKey);
+      } else {
+        if (ROLES[state.currentRoleKey].env !== 'web') {
+          state.currentRoleKey = 'comercial';
+        }
+        enterRoleSession(state.currentRoleKey);
+      }
+    }
+
+    // =========================================================================
+    // 4. RENDERIZADO GLOBAL DE VISTAS
+    // =========================================================================
+    function renderAll() {
+      const p00 = document.getElementById('screen-P-00');
+      const envMobile = document.getElementById('env-mobile');
+      const envWeb = document.getElementById('env-web');
+      const btnWeb = document.getElementById('btnModeWeb');
+      const btnMob = document.getElementById('btnModeMobile');
+
+      p00.classList.add('hidden');
+      envMobile.classList.add('hidden');
+      envWeb.classList.add('hidden');
+
+      if (state.activeEnv === 'P-00') {
+        p00.classList.remove('hidden');
+      } else if (state.activeEnv === 'mobile') {
+        envMobile.classList.remove('hidden');
+        btnMob.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 bg-white text-brand-dark shadow';
+        btnWeb.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 text-white hover:bg-white/10';
+        renderMobileViews();
+      } else {
+        envWeb.classList.remove('hidden');
+        btnWeb.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 bg-white text-brand-dark shadow';
+        btnMob.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 text-white hover:bg-white/10';
+        renderWebViews();
+      }
+    }
+
+    // =========================================================================
+    // 5. LÓGICA MÓVIL: M-01, M-02, P-01, P-02, P-03 (CU-01 / HU-01 / HU-02)
+    // =========================================================================
+    function toggleNetworkStatus() {
+      setNetworkStatus(!state.isOnline);
+    }
+
+    function setNetworkStatus(online) {
+      const wasOffline = !state.isOnline;
+      state.isOnline = online;
+      updateNetworkUI();
+
+      // HU-02.3: Motor de sincronización automática al recuperar red
+      if (online && wasOffline && state.offlineQueue.length > 0) {
+        setTimeout(() => {
+          syncOfflineQueue();
+        }, 500);
+      }
+    }
+
+    function updateNetworkUI() {
+      const banner = document.getElementById('banner-M-01');
+      const icon = document.getElementById('m01Icon');
+      const text = document.getElementById('m01Text');
+      const phoneSig = document.getElementById('phoneSignalLabel');
+      const simOn = document.getElementById('simOnlineBtn');
+      const simOff = document.getElementById('simOfflineBtn');
+      const qCount = state.offlineQueue.length;
+
+      document.getElementById('asidePendingCount').textContent = `${qCount} registro(s)`;
+      document.getElementById('mobileFooterQueue').textContent = `Cola offline: ${qCount}`;
+
+      if (state.isOnline) {
+        banner.className = 'px-4 py-2.5 text-xs font-bold flex items-center justify-between transition-colors bg-emerald-800 text-white';
+        icon.textContent = '📶';
+        text.textContent = qCount > 0
+          ? `En línea · Sincronizando ${qCount} pendiente(s)...`
+          : 'En línea (4G Tunja) · Todo sincronizado';
+        phoneSig.textContent = '4G · Señal Óptima';
+        phoneSig.className = 'font-bold text-emerald-400';
+
+        simOn.className = 'touch-btn px-3 py-2 rounded-xl font-bold text-xs border-2 transition flex flex-col items-center justify-center bg-emerald-700 text-white border-emerald-800';
+        simOff.className = 'touch-btn px-3 py-2 rounded-xl font-bold text-xs border-2 transition flex flex-col items-center justify-center bg-white text-stone-800 border-stone-300';
+      } else {
+        banner.className = 'px-4 py-2.5 text-xs font-bold flex items-center justify-between transition-colors bg-amber-600 text-white';
+        icon.textContent = '📵';
+        text.textContent = `Sin red · ${qCount} pendiente(s) de sincronización`;
+        phoneSig.textContent = 'SIN SERVICIO · MODO OFFLINE';
+        phoneSig.className = 'font-bold text-amber-400';
+
+        simOff.className = 'touch-btn px-3 py-2 rounded-xl font-bold text-xs border-2 transition flex flex-col items-center justify-center bg-amber-600 text-white border-amber-800';
+        simOn.className = 'touch-btn px-3 py-2 rounded-xl font-bold text-xs border-2 transition flex flex-col items-center justify-center bg-white text-stone-800 border-stone-300';
+      }
+    }
+
+    function triggerManualSync() {
+      if (!state.isOnline) {
+        showToast('⚠️ Sin cobertura de red', 'Conéctese a 4G/Wi-Fi para ejecutar la sincronización con planta.', 'warning');
+        return;
+      }
+      if (state.offlineQueue.length === 0) {
+        showToast('✓ Al día', 'No hay registros pendientes en la cola local del dispositivo.', 'success');
+        return;
+      }
+      syncOfflineQueue();
+    }
+
+    function syncOfflineQueue() {
+      const count = state.offlineQueue.length;
+      state.offlineQueue.forEach(item => {
+        const stop = state.stops.find(s => s.id === item.stopId);
+        if (stop) stop.syncState = 'SYNCED';
+      });
+      state.offlineQueue = [];
+      updateNetworkUI();
+      renderMobileStops();
+      renderDispatchTableP08();
+      renderInvimaTraceability(document.getElementById('p09LotSearch')?.value || 'LT-2026-081');
+
+      addSyncLog(`M-02: ${count} registro(s) offline sincronizados automáticamente con sede central.`, 'success');
+      showToast('Mensaje M-02 · Sincronización Completada', `Se enviaron ${count} entrega(s)/novedad(es) y sus evidencias al servidor de La Tradición.`, 'success');
+    }
+
+    function navigateMobile(screenId, stopId = null) {
+      state.activeMobileScreen = screenId;
+      if (stopId) state.selectedStopId = stopId;
+      renderMobileViews();
+    }
+
+    function renderMobileViews() {
+      updateNetworkUI();
+      const s = state.activeMobileScreen;
+      document.getElementById('ctxScreenMeta').textContent = `Pantalla móvil: ${s}`;
+
+      document.getElementById('mobile-P-01').classList.add('hidden');
+      document.getElementById('mobile-P-02').classList.add('hidden');
+      document.getElementById('mobile-P-03').classList.add('hidden');
+      document.getElementById('mobileBackBtn').classList.toggle('hidden', s === 'P-01');
+
+      if (s === 'P-01') {
+        document.getElementById('mobileHeaderTitle').textContent = 'P-01 · Hoja de Ruta (HU-01)';
+        document.getElementById('mobile-P-01').classList.remove('hidden');
+        renderMobileStops();
+      } else if (s === 'P-02') {
+        document.getElementById('mobileHeaderTitle').textContent = 'P-02 · Entrega Conforme';
+        document.getElementById('mobile-P-02').classList.remove('hidden');
+        prepareP02();
+      } else if (s === 'P-03') {
+        document.getElementById('mobileHeaderTitle').textContent = 'P-03 · Rechazo / Novedad';
+        document.getElementById('mobile-P-03').classList.remove('hidden');
+        prepareP03();
+      }
+    }
+
+    function renderMobileStops() {
+      const list = document.getElementById('mobileStopsList');
+      list.innerHTML = '';
+
+      const doneCount = state.stops.filter(st => st.status !== 'PENDIENTE').length;
+      document.getElementById('mobTotalStops').textContent = state.stops.length;
+      document.getElementById('mobDoneStops').textContent = doneCount;
+      document.getElementById('mobPendingStops').textContent = state.stops.length - doneCount;
+
+      state.stops.forEach(stop => {
+        const isDone = stop.status !== 'PENDIENTE';
+        const card = document.createElement('article');
+        card.className = `p-3.5 rounded-2xl border-2 transition space-y-2.5 ${
+          stop.status === 'ENTREGADO'
+            ? 'bg-emerald-50/70 border-emerald-300'
+            : stop.status === 'RECHAZADO'
+              ? 'bg-red-50/70 border-red-300'
+              : 'bg-white border-stone-200 shadow-sm'
+        }`;
+
+        const coldBadge = stop.isPerishable
+          ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-sky-100 text-sky-950">❄️ PERECEDERO · PRIORIDAD</span>`
+          : `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-stone-200 text-stone-800">📦 NO PERECEDERO · FINAL</span>`;
+
+        const statusBadge = stop.status === 'ENTREGADO'
+          ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-700 text-white">✓ ENTREGADO ${stop.syncState === 'PENDING_SYNC' ? '(OFFLINE)' : ''}</span>`
+          : stop.status === 'RECHAZADO'
+            ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-red-700 text-white">⚠️ RECHAZADO ${stop.syncState === 'PENDING_SYNC' ? '(OFFLINE)' : ''}</span>`
+            : `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-950">PARADA #${stop.order}</span>`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-1 flex-wrap">
+            ${statusBadge}
+            ${coldBadge}
+          </div>
+          <div>
+            <h4 class="text-sm font-extrabold text-brand-ink">${stop.client}</h4>
+            <p class="text-[11px] text-stone-600">${stop.zone}</p>
+          </div>
+          <div class="p-2.5 rounded-xl bg-brand-cream border border-stone-200 text-xs flex items-center justify-between">
+            <div>
+              <div class="font-bold text-stone-900">${stop.product}</div>
+              <div class="text-[11px] text-stone-600">Lote FEFO: <strong>${stop.lotCode}</strong></div>
+            </div>
+            <div class="text-right font-extrabold text-brand-primary text-sm">${stop.expectedKg} kg</div>
+          </div>
+          ${
+            !isDone
+              ? `<div class="grid grid-cols-2 gap-2 pt-0.5">
+                  <button type="button" onclick="openStopAction('${stop.id}', 'P-02', ${stop.isRuralNoSignal})"
+                    class="touch-btn rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-2.5 py-2 shadow-sm">
+                    ✓ Entregar (P-02)
+                  </button>
+                  <button type="button" onclick="openStopAction('${stop.id}', 'P-03', ${stop.isRuralNoSignal})"
+                    class="touch-btn rounded-xl bg-red-50 hover:bg-red-100 text-red-800 border border-red-300 font-bold text-xs px-2.5 py-2">
+                    ⚠️ Rechazo (P-03)
+                  </button>
+                </div>`
+              : `<div class="text-[11px] font-semibold text-stone-700 pt-1">${stop.evidence}</div>`
+          }
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function openStopAction(stopId, targetScreen, isRural) {
+      // Si el conductor entra a vereda rural (Runta / El Espino), sugerir o simular caída de señal automáticamente si estaba online
+      if (isRural && state.isOnline) {
+        setNetworkStatus(false);
+        showToast('📵 Zona rural sin cobertura (M-01)', 'Ingresando a vereda sin señal. Los registros se guardarán localmente en modo offline.', 'warning');
+      }
+      navigateMobile(targetScreen, stopId);
+    }
+
+    function prepareP02() {
+      const stop = state.stops.find(s => s.id === state.selectedStopId) || state.stops[0];
+      document.getElementById('p02StopOrder').textContent = `Parada #${stop.order}`;
+      document.getElementById('p02ClientName').textContent = stop.client;
+      document.getElementById('p02ProductInfo').textContent = `${stop.product} · Lote FEFO: ${stop.lotCode}`;
+      document.getElementById('p02PesoReal').value = stop.expectedKg;
+      document.getElementById('p02PesoPactadoHint').textContent = `Peso pactado en pedido: ${stop.expectedKg} kg`;
+      clearSignature();
+    }
+
+    function submitEntregaConforme(e) {
+      e.preventDefault();
+      if (!state.hasSigned) {
+        showToast('✍️ Firma requerida', 'Por favor solicite la firma digital del cliente en el recuadro táctil.', 'warning');
+        return;
+      }
+      const stop = state.stops.find(s => s.id === state.selectedStopId);
+      const pesoReal = parseFloat(document.getElementById('p02PesoReal').value);
+
+      stop.status = 'ENTREGADO';
+      stop.syncState = state.isOnline ? 'SYNCED' : 'PENDING_SYNC';
+      stop.evidence = `Entregado: ${pesoReal} kg · Empaque OK · Firma digital capturada`;
+
+      if (!state.isOnline) {
+        state.offlineQueue.push({ stopId: stop.id, type: 'ENTREGA', pesoReal });
+        addSyncLog(`[OFFLINE] Entrega ${stop.id} (${stop.client} · ${pesoReal} kg) guardada localmente.`, 'warning');
+        showToast('Guardado Offline (M-01)', 'Entrega almacenada como "Pendiente de Sincronización". Se enviará al recuperar señal.', 'warning');
+      } else {
+        addSyncLog(`[ONLINE] Entrega ${stop.id} (${stop.client} · ${pesoReal} kg) sincronizada en planta.`, 'success');
+        showToast('Entrega Registrada y Sincronizada', `Pedido ${stop.id} actualizado en inventario y trazabilidad INVIMA.`, 'success');
+      }
+
+      navigateMobile('P-01');
+    }
+
+    function prepareP03() {
+      const stop = state.stops.find(s => s.id === state.selectedStopId) || state.stops[0];
+      document.getElementById('p03LoteBadge').textContent = `Lote: ${stop.lotCode}`;
+      document.getElementById('p03ClientName').textContent = stop.client;
+      document.getElementById('p03ProductInfo').textContent = `${stop.product} · Pactado: ${stop.expectedKg} kg`;
+      document.getElementById('p03KilosRechazados').value = stop.expectedKg;
+      document.getElementById('p03Motivo').value = '';
+      state.photoCaptured = false;
+      document.getElementById('photoPreviewBox').classList.add('hidden');
+    }
+
+    function simulatePhotoCapture() {
+      const stop = state.stops.find(s => s.id === state.selectedStopId) || state.stops[0];
+      state.photoCaptured = true;
+      document.getElementById('photoMetaText').textContent = `rechazo_${stop.lotCode}.jpg · 342 KB (Comprimida) · Lote ${stop.lotCode}`;
+      document.getElementById('photoPreviewBox').classList.remove('hidden');
+    }
+
+    function submitRechazoCampo(e) {
+      e.preventDefault();
+      if (!state.photoCaptured) {
+        showToast('📷 Foto obligatoria (G5.2)', 'Capture la evidencia fotográfica del empaque/producto antes de registrar el rechazo.', 'warning');
+        return;
+      }
+      const stop = state.stops.find(s => s.id === state.selectedStopId);
+      const motivo = document.getElementById('p03Motivo').value;
+      const kilos = parseFloat(document.getElementById('p03KilosRechazados').value);
+
+      stop.status = 'RECHAZADO';
+      stop.syncState = state.isOnline ? 'SYNCED' : 'PENDING_SYNC';
+      stop.evidence = `Rechazo (${kilos} kg): ${motivo} · Foto vinculada a ${stop.lotCode}`;
+
+      if (!state.isOnline) {
+        state.offlineQueue.push({ stopId: stop.id, type: 'RECHAZO', motivo, kilos });
+        addSyncLog(`[OFFLINE] Rechazo ${stop.id} (${kilos} kg · Lote ${stop.lotCode}) guardado con foto.`, 'warning');
+        showToast('Rechazo Guardado Offline (HU-02.2)', 'Novedad y foto comprimida guardadas localmente para sincronización automática.', 'warning');
+      } else {
+        addSyncLog(`[ONLINE] Rechazo ${stop.id} (${kilos} kg · Lote ${stop.lotCode}) reportado a Calidad/INVIMA.`, 'success');
+        showToast('Rechazo Trazado al Lote', `Novedad asociada al lote ${stop.lotCode} para auditoría sanitaria.`, 'success');
+      }
+
+      navigateMobile('P-01');
+    }
+
+    // Canvas de firma táctil
+    function setupSignatureCanvas() {
+      const canvas = document.getElementById('signatureCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#1F1A18';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      let drawing = false;
+
+      const getPos = (evt) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+        return {
+          x: (clientX - rect.left) * (canvas.width / rect.width),
+          y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+      };
+
+      const start = (e) => {
+        drawing = true;
+        state.hasSigned = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      };
+      const move = (e) => {
+        if (!drawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      };
+      const end = () => { drawing = false; };
+
+      canvas.addEventListener('mousedown', start);
+      canvas.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', end);
+
+      canvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e); }, { passive: false });
+      canvas.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); }, { passive: false });
+      canvas.addEventListener('touchend', end);
+    }
+
+    function clearSignature() {
+      const canvas = document.getElementById('signatureCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      state.hasSigned = false;
+    }
+
+    function addSyncLog(msg, type) {
+      const log = document.getElementById('fieldSyncLog');
+      if (!log) return;
+      const item = document.createElement('div');
+      const time = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      item.className = `p-2.5 rounded-xl border ${
+        type === 'warning'
+          ? 'bg-amber-50 border-amber-300 text-amber-950'
+          : type === 'success'
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+            : 'bg-stone-50 border-stone-200 text-stone-700'
+      }`;
+      item.innerHTML = `<span class="font-bold">[${time}]</span> ${msg}`;
+      log.prepend(item);
+    }
+
+    // =========================================================================
+    // 6. LÓGICA WEB PLANTA: P-04, P-05, P-06, P-07, P-08, P-09
+    // =========================================================================
+    function renderWebViews() {
+      const role = ROLES[state.currentRoleKey];
+      const menu = document.getElementById('webRoleMenu');
+      menu.innerHTML = '';
+
+      // Si la pantalla activa no está permitida para el rol, redirigir a su pantalla de inicio
+      if (!role.allowedScreens.includes(state.activeWebScreen)) {
+        state.activeWebScreen = role.startScreen;
+      }
+
+      role.allowedScreens.forEach(scr => {
+        const isActive = state.activeWebScreen === scr;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => {
+          state.activeWebScreen = scr;
+          renderWebViews();
+        };
+        btn.className = `touch-btn px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+          isActive
+            ? 'bg-brand-primary text-white shadow'
+            : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+        }`;
+        btn.textContent = WEB_SCREEN_META[scr] || scr;
+        menu.appendChild(btn);
+      });
+
+      document.getElementById('ctxScreenMeta').textContent = `Pantalla activa: ${WEB_SCREEN_META[state.activeWebScreen]}`;
+
+      ['P-04', 'P-05', 'P-07', 'P-08', 'P-09'].forEach(id => {
+        document.getElementById(`web-${id}`).classList.add('hidden');
+      });
+      document.getElementById(`web-${state.activeWebScreen}`).classList.remove('hidden');
+
+      // Renderizar contenido específico de la pantalla activa
+      if (state.activeWebScreen === 'P-04') renderInventoryTableP04();
+      if (state.activeWebScreen === 'P-05') {
+        previewFefoLot();
+        renderOrdersP05();
+      }
+      if (state.activeWebScreen === 'P-07') renderSemaphoreTableP07();
+      if (state.activeWebScreen === 'P-08') renderDispatchTableP08();
+      if (state.activeWebScreen === 'P-09') populateInvimaSelectP09();
+    }
+
+    // --- P-04: Bodega ---
+    function autoClassifyColdChain() {
+      const val = document.getElementById('p04Producto').value.split('|');
+      document.getElementById('p04ClasificacionFrio').value = val[1];
+    }
+
+    function submitNuevoLote(e) {
+      e.preventDefault();
+      const prodParts = document.getElementById('p04Producto').value.split('|');
+      const product = prodParts[0];
+      const coldClass = prodParts[1];
+      const minSanitaryDays = parseInt(prodParts[2], 10);
+      const code = document.getElementById('p04CodigoLote').value.trim().toUpperCase();
+      const stockKg = parseFloat(document.getElementById('p04Peso').value);
+      const packDate = document.getElementById('p04FechaEmpaque').value;
+      const daysLeft = parseInt(document.getElementById('p04DiasVida').value, 10);
+
+      const isBlocked = daysLeft < minSanitaryDays;
+      const status = isBlocked ? 'BLOQUEADO' : (daysLeft <= minSanitaryDays + 3 ? 'ADVERTENCIA' : 'OPTIMO');
+
+      state.lots.push({
+        code,
+        product,
+        coldClass,
+        isPerishable: coldClass.startsWith('Perecedero'),
+        packDate,
+        daysLeft,
+        minSanitaryDays,
+        stockKg,
+        status,
+        reason: isBlocked
+          ? `Vida útil (${daysLeft} d) < mínimo sanitario (${minSanitaryDays} d) — Bloqueo automático G1.2`
+          : 'Lote habilitado bajo estándares sanitarios'
+      });
+
+      // Ordenar FEFO (menor días restantes primero)
+      state.lots.sort((a, b) => a.daysLeft - b.daysLeft);
+      renderInventoryTableP04();
+
+      // Incrementar código sugerido
+      const nextNum = Math.floor(90 + Math.random() * 9);
+      document.getElementById('p04CodigoLote').value = `LT-2026-0${nextNum}`;
+
+      if (isBlocked) {
+        openModalM05(code, product, daysLeft, minSanitaryDays);
+      } else {
+        showToast('Lote Registrado (CU-03)', `Lote ${code} (${product} · ${stockKg} kg) ingresado y clasificado como ${coldClass}.`, 'success');
+      }
+    }
+
+    function simulateBlockedLotM05() {
+      document.getElementById('p04Producto').selectedIndex = 0;
+      autoClassifyColdChain();
+      document.getElementById('p04CodigoLote').value = 'LT-2026-099';
+      document.getElementById('p04DiasVida').value = 5;
+      openModalM05('LT-2026-099', 'Carne de Cerdo Fresca', 5, 12);
+    }
+
+    function openModalM05(code, product, daysLeft, minDays) {
+      document.getElementById('m05Body').innerHTML = `
+        El lote <strong>${code} (${product})</strong> registra una vida útil de <strong>${daysLeft} días</strong>, inferior al mínimo sanitario exigido por Calidad (<strong>${minDays} días</strong>). El sistema lo ha bloqueado automáticamente (Regla G1.2).
+      `;
+      document.getElementById('modal-M-05').classList.remove('hidden');
+    }
+
+    function closeModalM05() {
+      document.getElementById('modal-M-05').classList.add('hidden');
+    }
+
+    function renderInventoryTableP04() {
+      const tbody = document.getElementById('p04InventoryTable');
+      tbody.innerHTML = '';
+      document.getElementById('p04LotCount').textContent = `${state.lots.length} lotes en inventario`;
+
+      state.lots.forEach(lot => {
+        const badge = getAccessibleStatusBadge(lot.status);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="py-2.5 px-2 font-extrabold text-brand-ink">${lot.code}</td>
+          <td class="py-2.5 px-2 font-semibold">${lot.product}</td>
+          <td class="py-2.5 px-2 text-stone-600">${lot.coldClass}</td>
+          <td class="py-2.5 px-2 font-bold">${lot.stockKg} kg</td>
+          <td class="py-2.5 px-2 font-semibold">${lot.daysLeft} días</td>
+          <td class="py-2.5 px-2">${badge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- P-05 & P-06: Comercial FEFO y Obstáculo OB-1 ---
+    function findBestFefoLot(productName, requiredKg) {
+      return state.lots.find(l => l.product === productName && l.status !== 'BLOQUEADO' && l.stockKg >= requiredKg);
+    }
+
+    function previewFefoLot() {
+      const prod = document.getElementById('p05Producto').value;
+      const kg = parseFloat(document.getElementById('p05Kilos').value) || 0;
+      const box = document.getElementById('p05FefoPreview');
+      const details = document.getElementById('p05FefoDetails');
+
+      const lot = findBestFefoLot(prod, kg);
+      if (lot) {
+        box.className = 'p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-xs space-y-1';
+        details.innerHTML = `
+          <strong>${lot.code}</strong> · Vence en <strong>${lot.daysLeft} días</strong> (Mín. sanitario: ${lot.minSanitaryDays} d) · Stock disponible: <strong>${lot.stockKg} kg</strong>.
+        `;
+      } else {
+        box.className = 'p-3.5 rounded-xl bg-red-50 border border-red-300 text-xs space-y-1';
+        details.innerHTML = `
+          <span class="text-red-900 font-bold">⚠️ Ningún lote válido disponible cubre ${kg} kg de ${prod}. Ajuste kilos o revise bloqueos en P-07.</span>
+        `;
+      }
+    }
+
+    function submitPedidoFEFO(e) {
+      e.preventDefault();
+      const clientParts = document.getElementById('p05Cliente').value.split('|');
+      const client = clientParts[0];
+      const zone = clientParts[1];
+      const prod = document.getElementById('p05Producto').value;
+      const kg = parseFloat(document.getElementById('p05Kilos').value);
+
+      const lot = findBestFefoLot(prod, kg);
+      if (!lot) {
+        showToast('Stock FEFO insuficiente', 'No hay un lote habilitado con los kilos solicitados.', 'warning');
+        return;
+      }
+
+      lot.stockKg -= kg;
+      const newOrderId = `PED-${100 + state.stops.length + 1}`;
+
+      state.commercialOrders.unshift({
+        id: newOrderId,
+        client,
+        product: prod,
+        kg,
+        lotCode: lot.code,
+        note: `Asignación FEFO automática (${lot.daysLeft} días vida útil)`
+      });
+
+      // Agregar también a la hoja de ruta P-08 / P-01 y re-secuenciar bajo HU-01
+      state.stops.push({
+        id: newOrderId,
+        order: state.stops.length + 1,
+        client: client.split('·')[0].trim(),
+        zone,
+        isRuralNoSignal: zone.includes('Rural'),
+        product: prod,
+        lotCode: lot.code,
+        expectedKg: kg,
+        isPerishable: lot.isPerishable,
+        status: 'PENDIENTE',
+        syncState: 'SYNCED',
+        evidence: 'Recién asignado desde Comercial (CU-02)'
+      });
+      resequenceStopsByColdPriority();
+
+      renderOrdersP05();
+      previewFefoLot();
+      showToast('Pedido Reservado con Lote FEFO', `${newOrderId} vinculado al lote ${lot.code} y enviado a Despacho (HU-01).`, 'success');
+    }
+
+    function simulateOB1Reassignment() {
+      // Simula Obstáculo OB-1: LT-2026-079 bloqueado -> reasigna automáticamente LT-2026-081 y dispara M-04
+      document.getElementById('p05Producto').value = 'Carne de Cerdo Fresca';
+      document.getElementById('p05Kilos').value = 25;
+      previewFefoLot();
+
+      document.getElementById('p06OldLot').textContent = 'LT-2026-079 (Bloqueado por Calidad · 6 días vida útil)';
+      document.getElementById('p06NewLot').textContent = 'LT-2026-081 (Reasignado automáticamente · 18 días vida útil)';
+      document.getElementById('m04Text').textContent =
+        'Obstáculo OB-1 detectado en Carne de Cerdo Fresca: LT-2026-079 bloqueado. Sistema reasignó automáticamente LT-2026-081 y notificó al Jefe de Bodega (G2.3).';
+      document.getElementById('banner-M-04').classList.remove('hidden');
+
+      showToast('Reasignación Automática OB-1 (P-06)', 'Se aplicó estrategia G2.3 y se emitió notificación M-04 al Jefe de Bodega.', 'warning');
+    }
+
+    function renderOrdersP05() {
+      const list = document.getElementById('p05OrdersList');
+      list.innerHTML = '';
+      state.commercialOrders.forEach(ord => {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-xl bg-brand-cream border border-stone-200 flex items-center justify-between gap-2';
+        div.innerHTML = `
+          <div>
+            <div class="font-extrabold text-brand-ink">${ord.id} · ${ord.client}</div>
+            <div class="text-stone-600">${ord.product} (${ord.kg} kg) · Lote: <strong>${ord.lotCode}</strong></div>
+            <div class="text-[11px] text-emerald-800 font-medium">${ord.note}</div>
+          </div>
+          <span class="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-900 font-bold text-[11px]">FEFO OK</span>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    // --- P-07: Semáforo de Vencimientos y Bloqueos (RNF-009.2) ---
+    function getAccessibleStatusBadge(status) {
+      if (status === 'OPTIMO') {
+        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-950 border border-emerald-400 font-extrabold text-xs">
+          <span aria-hidden="true">🟢</span> <span>ÓPTIMO</span>
+        </span>`;
+      }
+      if (status === 'ADVERTENCIA') {
+        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-950 border border-amber-500 font-extrabold text-xs">
+          <span aria-hidden="true">⚠️</span> <span>ADVERTENCIA COMERCIAL</span>
+        </span>`;
+      }
+      return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-100 text-red-950 border border-red-500 font-extrabold text-xs">
+        <span aria-hidden="true">🛑</span> <span>BLOQUEADO / VENCIDO</span>
+      </span>`;
+    }
+
+    function renderSemaphoreTableP07() {
+      const tbody = document.getElementById('p07SemaphoreTable');
+      tbody.innerHTML = '';
+
+      state.lots.forEach((lot, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="py-3 px-2 font-extrabold text-brand-ink">${lot.code}</td>
+          <td class="py-3 px-2 font-semibold">${lot.product}</td>
+          <td class="py-3 px-2 text-xs text-stone-600">${lot.coldClass}</td>
+          <td class="py-3 px-2 font-bold">${lot.stockKg} kg</td>
+          <td class="py-3 px-2 font-semibold">${lot.daysLeft} días <span class="text-[11px] text-stone-500">(mín. ${lot.minSanitaryDays} d)</span></td>
+          <td class="py-3 px-2">${getAccessibleStatusBadge(lot.status)}</td>
+          <td class="py-3 px-2">
+            <button type="button" onclick="toggleLotBlock(${idx})"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                lot.status === 'BLOQUEADO'
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-400 hover:bg-emerald-100'
+                  : 'bg-red-50 text-red-900 border-red-300 hover:bg-red-100'
+              }">
+              ${lot.status === 'BLOQUEADO' ? 'Habilitar Lote' : 'Bloquear Lote (CU-05)'}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleLotBlock(index) {
+      const lot = state.lots[index];
+      if (lot.status === 'BLOQUEADO') {
+        lot.status = lot.daysLeft <= lot.minSanitaryDays + 3 ? 'ADVERTENCIA' : 'OPTIMO';
+        lot.reason = 'Habilitado manualmente por Responsable de Calidad';
+        showToast('Lote Habilitado', `El lote ${lot.code} vuelve a estar disponible para asignación FEFO.`, 'success');
+      } else {
+        lot.status = 'BLOQUEADO';
+        lot.reason = 'Bloqueo preventivo aplicado por Responsable de Calidad (CU-05)';
+        showToast('Lote Bloqueado (CU-05)', `El lote ${lot.code} ha sido retirado de disponibilidad comercial.`, 'warning');
+      }
+      renderSemaphoreTableP07();
+    }
+
+    function triggerDailyAlertM03() {
+      const warnLots = state.lots.filter(l => l.status === 'ADVERTENCIA');
+      const msg = warnLots.length > 0
+        ? `Planificador diario (CU-08): ${warnLots.map(l => `${l.code} (${l.product}, ${l.daysLeft} días)`).join(', ')} requieren prioridad de venta comercial hoy.`
+        : 'Planificador diario (CU-08): Ningún lote en zona amarilla hoy; todos los lotes activos tienen margen sanitario óptimo.';
+      document.getElementById('m03Text').textContent = msg;
+      showToast('Mensaje M-03 Emitido (CU-08)', 'Notificación diaria enviada a Asesor Comercial y Jefe de Bodega.', 'warning');
+    }
+
+    // --- P-08: Despacho y Secuenciación HU-01 ---
+    function resequenceStopsByColdPriority() {
+      // HU-01: Perecederos primero, manteca (no perecedero) al final
+      state.stops.sort((a, b) => (a.isPerishable === b.isPerishable ? 0 : a.isPerishable ? -1 : 1));
+      state.stops.forEach((s, i) => { s.order = i + 1; });
+    }
+
+    function optimizeRouteHU01() {
+      resequenceStopsByColdPriority();
+      renderDispatchTableP08();
+      showToast('Mensaje M-06 · Ruta Optimizada (HU-01)', 'Paradas ordenadas: cárnicos perecederos al inicio y manteca de cerdo al final.', 'success');
+    }
+
+    function renderDispatchTableP08() {
+      const tbody = document.getElementById('p08DispatchTable');
+      tbody.innerHTML = '';
+
+      state.stops.forEach(stop => {
+        const statusHtml = stop.status === 'ENTREGADO'
+          ? `<span class="px-2 py-1 rounded bg-emerald-100 text-emerald-950 font-extrabold text-xs">✓ Entregado ${stop.syncState === 'PENDING_SYNC' ? '(Pendiente Sync)' : ''}</span>`
+          : stop.status === 'RECHAZADO'
+            ? `<span class="px-2 py-1 rounded bg-red-100 text-red-950 font-extrabold text-xs">⚠️ Rechazado ${stop.syncState === 'PENDING_SYNC' ? '(Pendiente Sync)' : ''}</span>`
+            : `<span class="px-2 py-1 rounded bg-amber-100 text-amber-950 font-extrabold text-xs">⏳ En Ruta</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="py-3 px-2 font-extrabold text-brand-primary">#${stop.order}</td>
+          <td class="py-3 px-2">
+            <div class="font-bold text-brand-ink">${stop.client}</div>
+            <div class="text-[11px] text-stone-500">${stop.zone}</div>
+          </td>
+          <td class="py-3 px-2">
+            <div class="font-semibold">${stop.product} (${stop.expectedKg} kg)</div>
+            <div class="text-[11px] text-stone-500">Lote: <strong>${stop.lotCode}</strong></div>
+          </td>
+          <td class="py-3 px-2 text-xs font-bold">
+            ${stop.isPerishable ? '❄️ 1.° Tramo (Frío)' : '📦 Tramo Final (Seco)'}
+          </td>
+          <td class="py-3 px-2">${statusHtml}</td>
+          <td class="py-3 px-2 text-xs text-stone-600">${stop.evidence}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- P-09: Trazabilidad Sanitaria INVIMA (CU-09) ---
+    function populateInvimaSelectP09() {
+      const sel = document.getElementById('p09LotSearch');
+      const currentVal = sel.value;
+      sel.innerHTML = '';
+      state.lots.forEach(lot => {
+        const opt = document.createElement('option');
+        opt.value = lot.code;
+        opt.textContent = `${lot.code} · ${lot.product} (${lot.status})`;
+        sel.appendChild(opt);
+      });
+      if (currentVal && state.lots.some(l => l.code === currentVal)) {
+        sel.value = currentVal;
+      } else {
+        sel.value = 'LT-2026-081';
+      }
+      renderInvimaTraceability(sel.value);
+    }
+
+    function renderInvimaTraceability(lotCode) {
+      const lot = state.lots.find(l => l.code === lotCode) || state.lots[0];
+      const relatedStops = state.stops.filter(s => s.lotCode === lot.code);
+      const container = document.getElementById('p09TraceContainer');
+
+      const deliveryTimelineHtml = relatedStops.length > 0
+        ? relatedStops.map(st => `
+            <div class="p-3 rounded-xl border ${st.status === 'RECHAZADO' ? 'bg-red-50 border-red-300' : 'bg-white border-stone-200'} text-xs space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-brand-ink">Pedido ${st.id} · ${st.client}</span>
+                <span class="font-bold">${st.status} (${st.syncState === 'SYNCED' ? 'Sincronizado' : 'Pendiente en móvil'})</span>
+              </div>
+              <div class="text-stone-600">Zona: ${st.zone} · Conductor: Jairo Mendoza (Ruta #R-04)</div>
+              <div class="font-semibold text-stone-800">Registro de campo: ${st.evidence}</div>
+            </div>
+          `).join('')
+        : `<div class="p-3 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-600">
+            Este lote aún no tiene despachos asignados en ruta activa.
+          </div>`;
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-2xl bg-brand-cream border border-stone-200 space-y-1.5">
+            <div class="text-[11px] font-extrabold uppercase text-brand-primary">1. Origen e Ingreso Bodega (G1)</div>
+            <div class="text-base font-extrabold text-brand-ink">${lot.code} · ${lot.product}</div>
+            <div class="text-xs text-stone-700">Fecha empaque: <strong>${lot.packDate}</strong></div>
+            <div class="text-xs text-stone-700">Condición térmica: <strong>${lot.coldClass}</strong></div>
+            <div class="pt-1">${getAccessibleStatusBadge(lot.status)}</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-brand-cream border border-stone-200 space-y-1.5">
+            <div class="text-[11px] font-extrabold uppercase text-brand-primary">2. Control Sanitario y FEFO (G2 / G4)</div>
+            <div class="text-xs text-stone-700">Vida útil restante: <strong>${lot.daysLeft} días</strong> (Mínimo Calidad: ${lot.minSanitaryDays} días)</div>
+            <div class="text-xs text-stone-700">Stock actual en planta: <strong>${lot.stockKg} kg</strong></div>
+            <div class="text-xs text-stone-600 italic">${lot.reason}</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-brand-cream border border-stone-200 space-y-1.5">
+            <div class="text-[11px] font-extrabold uppercase text-brand-primary">3. Auditoría INVIMA (G5.3)</div>
+            <div class="text-xs text-stone-700">Trazabilidad inmutable: <strong>Verificada (RF-001.1)</strong></div>
+            <div class="text-xs text-stone-700">Planta productora: <strong>La Tradición · Barrio Libertador, Tunja</strong></div>
+            <div class="text-xs text-emerald-800 font-bold">✓ Listo para inspección sanitaria</div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-extrabold uppercase text-stone-700">4. Destinos, Clientes y Evidencia de Campo Asociada al Lote ${lot.code}</h4>
+          ${deliveryTimelineHtml}
+        </div>
+      `;
+    }
+
+    function exportInvimaReport() {
+      const lotCode = document.getElementById('p09LotSearch').value;
+      showToast('Reporte INVIMA Generado (RNF-004.5)', `Acta sanitaria del lote ${lotCode} generada en 0.8 s con traza completa de origen, ruta y rechazos.`, 'success');
+    }
+
+    // =========================================================================
+    // 7. UTILIDAD DE NOTIFICACIONES TOAST (M-02)
+    // =========================================================================
+    let toastTimer = null;
+    function showToast(title, body, type = 'success') {
+      const toast = document.getElementById('toast-M-02');
+      const tTitle = document.getElementById('toastTitle');
+      const tBody = document.getElementById('toastBody');
+      const tIcon = document.getElementById('toastIcon');
+
+      tTitle.textContent = title;
+      tBody.textContent = body;
+
+      if (type === 'warning') {
+        toast.className = 'fixed bottom-5 right-5 z-50 max-w-sm bg-stone-900 text-white px-4 py-3.5 rounded-2xl shadow-2xl border-2 border-amber-500 animate-toast';
+        tTitle.className = 'font-extrabold text-amber-400 uppercase tracking-wide';
+        tIcon.textContent = '⚠️';
+      } else {
+        toast.className = 'fixed bottom-5 right-5 z-50 max-w-sm bg-stone-900 text-white px-4 py-3.5 rounded-2xl shadow-2xl border-2 border-emerald-500 animate-toast';
+        tTitle.className = 'font-extrabold text-emerald-400 uppercase tracking-wide';
+        tIcon.textContent = '✅';
+      }
+
+      toast.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 4800);
+    }
+
+    window.onload = initApp;
+  </script>
+</body>
+</html>

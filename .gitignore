@@ -1,0 +1,8 @@
+.vscode/
+bin/
+sim-state/
+*.log
+*.class
+*.jar
+*.docx
+.agents/

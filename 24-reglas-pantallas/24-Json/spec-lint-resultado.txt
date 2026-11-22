@@ -1,0 +1,10 @@
+AUTOPRUEBA SPEC-LINT · 24-reglas-pantallas/ (v2)
+Estado: APROBADA (100%)
+Reglas evaluadas: 16
+Cálculos comprobados (Algoritmo A vs Algoritmo B): 11/11
+Preguntas de negocio documentadas: 4
+Errores: 0 | Advertencias: 0
+
+Detalle Tablas de Decisión:
+  - TD-01: 8 combinaciones, sin_regla=0, solapamientos=0, cobertura={'R1': 1, 'R2': 1, 'R3': 2, 'R4': 4}
+  - TD-02: 12 combinaciones, sin_regla=0, solapamientos=0, cobertura={'R1': 2, 'R2': 1, 'R3': 1, 'R4': 1, 'R5': 1, 'R6': 6}

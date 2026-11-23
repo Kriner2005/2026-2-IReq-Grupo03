@@ -1,0 +1,21 @@
+@startuml DCU-02f-SICIRD
+title DCU-02f-SICIRD · vista <<Planificador>>- Sistema SICIRD (La Tradición)
+left to right direction
+
+actor "Planificador " as TIME <<temporal>>
+actor "jefe/Auxiliar de Bodega" as BOD
+
+
+rectangle "Sistema SICIRD — La Tradición" {
+  usecase "CU-06 Alertar semáforo de vencimiento" as CU06  
+  usecase "CU-19 Notificar lotes cuyos vencimiento entre en estado de advertencia" as CU19
+}
+
+TIME -- CU06
+CU06 -- BOD
+
+CU06 ..> CU19 : <<extends>>
+ 
+
+
+@enduml

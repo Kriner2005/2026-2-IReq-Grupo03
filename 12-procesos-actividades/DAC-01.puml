@@ -1,0 +1,35 @@
+@startuml
+' DAC-01 · Diagrama de Actividades · Flujo de CU-01 "Registrar entrega en campo"
+title DAC-01 · Diagrama de Actividades: Registrar entrega en campo (CU-01)
+
+|Distribuidor-Transportador|
+start
+:Identificar pedido y parada correspondiente en la ruta;
+:Ingresar kilos entregados y verificar estado del empaque;
+
+if (¿El cliente acepta el pedido?) then ([Conforme])
+  :Capturar recibido y firma digital del cliente;
+else ([Rechazo parcial o total])
+  :Registrar motivo de rechazo y kilos afectados;
+  :Tomar fotografía de evidencia de la novedad;
+endif
+
+|App Móvil SICIRD (Local)|
+:Guardar registro de entrega localmente en el dispositivo;
+:Asociar registro a pedido, lote, cliente y ruta;
+
+if (¿Existe conexión a red de datos?) then ([Sí - Online])
+  |Servidor Sede Central (Planta)|
+  :Sincronizar registro con la sede central;
+  :Actualizar historial de entregas e inventario;
+  |App Móvil SICIRD (Local)|
+  :Marcar registro como "Sincronizado";
+else ([No - Offline / Extensión 4a])
+  :Conservar registro localmente como "Pendiente de Sincronización";
+  :Notificar al conductor que la sincronización ocurrirá al recuperar red;
+endif
+
+|Distribuidor-Transportador|
+:Continuar con la siguiente parada de la ruta de reparto;
+stop
+@enduml

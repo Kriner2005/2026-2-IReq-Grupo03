@@ -1,0 +1,22 @@
+@startuml UCD-CU02-RegistrarIngreso-Mejorado
+left to right direction
+
+actor "Auxiliar de Bodega" as Auxiliar
+
+rectangle "Sistema SICIRD" {
+    usecase "Registrar Ingreso de Lote" as UC_Registrar
+    usecase "Agregar información de lote" as AG_Info
+    usecase "Verificar pedido" as VE_lote
+    usecase "Rechazar lote por inconsistencias" as RC_Lote
+    usecase "Aceptar lote" as AC_lote
+}
+
+Auxiliar --> UC_Registrar
+
+UC_Registrar ..> AG_Info : <<include>>
+UC_Registrar ..> VE_lote : <<include>>
+
+RC_Lote ..> VE_lote : <<extend>>
+AC_lote ..> VE_lote : <<extend>>
+
+@enduml

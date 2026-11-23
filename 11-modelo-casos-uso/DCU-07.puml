@@ -1,0 +1,20 @@
+@startuml DCU-02d-SICIRD
+title DCU-02d-SICIRD · vista <<Responsable de Calidad >>- Sistema SICIRD (La Tradición)
+left to right direction
+
+actor "Responsable de Calidad" as CAL
+
+
+rectangle "Sistema SICIRD — La Tradición" {
+  usecase "CU-06 Generar reporte de trazabilidad INVIMA" as CU06
+  usecase "CU-13 Seleccionar lote o conjunto de lotes" as CU13
+}
+
+CAL -- CU06
+
+CU06 ..> CU13 : <<include>>
+
+
+
+
+@enduml

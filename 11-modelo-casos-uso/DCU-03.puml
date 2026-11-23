@@ -1,0 +1,23 @@
+@startuml DCU-02b-SICIRD
+title DCU-02b-SICIRD · vista <<jefe/Auxiliar de Bodega >>- Sistema SICIRD (La Tradición)
+left to right direction
+
+actor "Asesor Comercial" as COM
+
+
+rectangle "Sistema SICIRD — La Tradición" {
+  usecase "CU-02 Generar orden" as CU02
+  usecase "CU-10 Asignar Cliente" as CU10
+  usecase "CU-11 Seleccionar producto, cantidad y presentacion" as CU11
+  usecase "CU-12 Asignar condiciones de la orden" as CU12
+
+}
+
+COM -- CU02
+
+CU12 ..> CU02 : <<extends>>
+CU02 ..> CU11 : <<include>>
+CU02 ..> CU10 : <<include>>
+
+
+@enduml
